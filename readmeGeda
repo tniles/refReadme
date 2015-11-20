@@ -1,0 +1,437 @@
+
+############################################################
+Checklist for prior to ordering boards (gerber inspection):
+    Did you update and run the DRC?
+    Did you load the Vendor Drill Mapping? [:LoadVendor(drillFile)]
+    Verify you have included the Board Outline layer
+    Verify all pins/pads/vias have copper on all appropriate layers (e.g. top, bottom, and 
+        inner)
+    Verify soldermask has proper clearance where req'd (e.g. not covering copper of vias, etc)
+    Verify soldermask absent from heat sink areas (gnd pads for ICs, etc.)
+    Verify soldermask is covering the appropriate vias and other copper
+    Verify pours (polygons) are not leaving odd geometries of copper
+    Verify all layers line up (spatially) as expected
+    Verify annular sizes look reasonable (Be generous so you have a enough to solder to! Also,
+        so board houses don't drill your connection away!)
+        Note: prefer octagonal for more clearance and copper area.
+    Verify antipads look reasonable
+    Do you have an outer layer with no tracks? Verify board house doesn't mind negative 
+        layers, or change to a positive layer by adding an electrically-connected/used track 
+        or thermal
+
+###########
+Shortcuts:
+    NOTE: These Are Case-Sensitive!
+
+GSCHEM
+    h,h     show keyboard shortcuts
+    i       add component (show menu)
+    n       add net (starting from where cursor hovers)
+    v,e     View extents
+    e,r     Rotate
+    e,i     Mirror
+    e,c     Copy
+    e,e     edit attributes
+    a,a     add attribute (includes naming nets, or editing named nets)
+    a,c     add component (show menu)
+    a,b     add box
+    a,t     add text
+    t,u     auto-number refdes
+    u       undo
+    shift+r redo
+    t,t     toggle visibility of attributes
+    o,l     show log window
+    o,c     show coord window
+    o,r     toggle rubberband (for nets on components)
+    o,m     toggle magnetic (for nets to pins)
+
+PCB
+    j   toggle copper pour over trace
+    h   toggle refdes visibility
+    q   toggle square/oval pads
+    s   adjust size (use shift key to reverse)
+    k   adjust clearance (use shift key to reverse)
+    g   adjust grid (use shift key to reverse)
+    l   adjust line (use shift key to reverse)
+    v   view extents
+    ctrl+S   adjust hole (use shift key to reverse)
+
+##########
+Thermals:
+    Use the shift key to change the style of thermal
+    Thermals must be constructed manually for pads. Add copper tracks intersecting the pad, 
+    then use the 'j' shortcut to toggle the track to be shorted to the pour.
+
+    Have an existing pour and need to clear some of it away?
+        The delete tool/key and the Polygon Hole tool are your friends. 
+        First select Polygon Hole tool. 
+        Click on existing polygon to receive hole.
+        Draw hole.
+        Use the delete tool or select hole and delete.
+
+###########
+Edit Symbols and Custom Symbols:
+
+Best done in gschem! Right click "down symbol", make edits, "save as" and it will be added to 
+your Custom Symbols library according to your system or user gafrc.
+
+Shiny new symbol not showing up in the Add Component menu? Click the little refresh button in
+the Add Component menu.
+
+Note: the net attr must follow the convention "name:pinNumber". This includes any renaming
+performed on instantiations in the schematic (otherwise it will be ignored by the netlister).
+
+###########
+Help! My custom symbols didn't update after I made a change to the symbol:
+
+Sometimes you find you need to make changes to a symbol already in your schematic(s). Simply
+edit the symbol, and save it back to the library. Be sure to verify the change by opening a 
+schematic which makes thorough use of the symbol. What?! What happened? Oh no! The symbol 
+saved in the schematic still looks like the old version. Don't worry, gschem just needs to be
+kicked. Here's how:
+    1) View extents
+    2) Select All
+    3) Edit > Update Component
+    4) Now verify all connections, nets, names, and the symbol itself is as expected. It would
+       be a shame for a good change to break a bunch of schematics!
+
+###########
+Edit/modify/replace Symbols in place:
+
+For example, maybe for organizational reasons (really good ones) a symbol file name changed.
+Now what do you do to make sure the correct symbol is in your schematics?
+
+Edit the file manually! Substitute and replace! In plain ascii text!
+
+This is the beauty of an open source application where fiddling is encouraged. Potentially 
+daunting tasks like these become simple and efficient.
+
+
+##################################
+From Schematic Capture to Layout:
+
+NOTE: This assumes source control for oopsies. Backups can be a good idea, too, at any step of
+the way (especially if you are not using the VCS as you should!).
+
+TERSE:
+1) Create schematics in gschem. Save.
+2) refdes_renum --pgskip *.sch
+3) gnetlist -g drc2 *.sch -o /dev/stdout
+#4) gnetlist -v -g PCB -o netlist *.sch
+5) Open PCB and select File > Import Schematics.
+    Repeat when changes have occurred in the schematics.
+    At this point, it is reasonable to rerun DRCs, etc. and refresh the rat's nest ("o").
+
+VERBOSE:
+1) gschem: create schematic with symbols with footprints
+2) Optional: with gschem closed, run 'refdes_renum --pgskip *.sch' to autonumber all 
+   refdes's. The pgskip option provides a numbering favaorable to page numbers--e.g. on 
+   multipage schematics, page one will start with 101 and page two will start with 201.
+   NOTE: don't do this again if you have already made a board layout, as the two will lose
+   sync.
+   NOTE: this may incorrectly number a multi-circuit chip symbol as multiple refdes's. Go 
+   back and change this manually in gschem, ensuring your 'slot' attributes are also correct.
+3) Run a Design Rule Check (DRC) using gnetlist. This will reduce or eliminate errors 
+   otherwise encountered when importing into PCB.
+4) If an explicit netlist is required, use gnetlist: input a schematic, get a netlist out 
+   (optional output: simple bill of materials) 'gnetlist -v -g PCB -o netlist *.sch'
+5) pcb: input a schematic/netlist, proceed to design layout. When File > Import Schematics is
+   invoked, gnetlist gathers info from the schematics. I prefer this because it automates the
+   gnetlist step for the user. If these steps were less involving of a human, then it would be
+   important to have tighter control over it. As it is, the user ought to recognize if 
+   something changes during this process (say, if for some odd reason, gnetlist barfs because
+   it lost sync between gschem and pcb settings.
+
+PCB can then export gerbers to send to a board house.
+
+#######################
+Multi-page schematics:
+
+OPTION #1:
+Each page is a different file. To connect them, just name the nets the same on each page, and
+feed all relevent pages to the netlister (through a project file, usually).
+
+OPTION #2:
+Within gschem, use the Page Menu and add/load multiple pages.
+
+The easy way to then load these files (e.g. at a later date) is via nautilus. Select all the 
+applicable pages for the design, and then press enter. From the command line, call gschem
+directly, i.e. 'gschem page*.sch'.
+
+#################
+Rats nest woes:
+
+For example, moving a part to the other side of the board disconnects the rats. WTF@!?
+When this happens, simply select all the rats and then Select > Optimize Selected Rats and 
+everything will be redrawn (as good as new!).
+    BUG!! Sometimes that doesn't work, in particular after a "disperse elements". 
+    SOLUTION: press the 'o' key instead. This works much better.
+
+Also, when moving parts, do not select first. Rather, while unselected, click and drag. This
+will retain the integrity of the drawn rats.
+
+#################
+Exporting a DXF:
+    # For SHARING with SolidWorks (knuckle draggers) #
+    gEDA (*.pcb > *.ps) | Inkscape (*.ps -> *.ps) | pstoedit (*.ps -> *.dxf)
+
+    Inkscape shortcuts:
+        Import              Shift+I
+        Transform           Shift+Ctrl+M
+        Document Properties Shift+Ctrl+D
+
+    WHAT WORKED BEST FOR ME:
+    1. Verify your layout (*.pcb) has the correct board size (e.g. no wasted canvas). 
+    Otherwise this error will propagate through the rest of the process.
+    2. Export from gEDA pcb as a ps:
+        a. Select All Visible
+        b. The only active selections should be: 
+            Drill Helper, Align Marks, Outline, Multi-File, Drill-copper.
+            NOTE: Align Marks is the only way to get multiple layers correctly aligned, but 
+            will present an offset from (0,0) in the PS and DXF as a side effect.
+    3. Inkscape: import enough ps files to construct one side of the board, default options 
+       are OK.
+        a. Import
+            e.g. top, outline, top silk layers. NOTE: import one at a time.
+        b. Align layers
+            Object > Transform provides a menu to Move the object. Deselect Relative Move and
+            set position to (0,0).
+        c. Resize Canvas
+            i. Choose US Letter
+            ii. File > Document Properties > "Resize page to content" > 
+                "Resize Page to drawing or selection"
+            At this point, now use the Page Margin fields to match to the size of the board.
+            This negates the effect of the alignment markers exported in the original PS.
+            NOTE: I did not see adjusting the margins have any affect (likely because we are 
+            saving back to PS).
+        d. Export/Save As PS (defaults okay)
+    4. pstoedit -f dxf_s in.ps out.dxf
+        a. "-f dxf" will use POLYLINES, not splines
+        b. "-f dxf:polyaslines" specifies to use LINEs instead of POLYLINEs in DXF
+            saw error: "option could not be handled by driver"
+        c. "-f dxf_s" will use splines for curves
+        d. "-f dxf_s:splineaspolyline" will approximate splines with POLYLINEs for curves
+            saw error: "option could not be handled by driver"
+    5. Verify your work with LibreCad
+        a. For example, compare a dimension between two on-center holes. Verify against what 
+        you have in the gEDA pcb.
+            NOTE: you may need to increase the grid resolution to accomplish this. I have 
+            found this process to be very accurate.
+
+Verbose starting point, below here:
+
+    From: http://www.cnczone.com/forums/pcb-milling/97677-cnc-cad-software.html
+    # For MILLING on a CNC #
+    gEDA (*.pcb > *.ps) | Inkscape (*.ps -> *.ps) | pstoedit (*.ps -> *.dxf)
+    1.  With completed *.pcb, select File > Export > PS (check box Multi-file for all layers)
+    2.  Import into Inkscape, Select All and then select Object > Ungroup
+        a. If all you need are the mechanicals, this should be enough. Proceed to Step 3.
+        b. If you require traces to be accurate (e.g. for use with a milling program), 
+        continue on.
+            The reason is ps/pdf files store lines as 'strokes', which have no thickness. 
+            Tada... Inkscape!
+        c. Convert strokes to paths. Select All, then select Path > Stroke to Path
+            Note: inspect tracks at their ends and curves/corners (Inkscape bug).
+            Note: I (tbn) had to do this part twice.
+        d. Side affect: now everything are separate objects. Deselect All, Select All, then 
+        select
+            Path > Union
+            Note: this will remove all drill holes (okay for milling copper).
+            Note: I (tbn) had to use Combine rather than Union (which made everything 
+            disappear).
+        e. Export as *.ps. Although Inkscape can export as DXF, this would change your curved 
+           objects to straight lines.
+    3.  pstoedit (to the rescue!)
+        a. pstoedit -f dxf_s in.ps out.dxf
+        b. the dxf_s option does a better job with curves than the dxf option
+    Note: I (tbn) saw mixed results with the above process. For example, traces became ovals 
+    (of the proper dimensions, but looked odd). It also made the alignment marks visible in 
+    the DXF. Bleh.
+
+    Programs to view DXF files with:
+        libreCad, qcad, teigha viewer, lx-viewer (aka linux viewer, obsoleted)
+
+###################
+Jargon (official):
+    track(s)    copper traces
+    element     a footprint or other collection of tracks, silk, etc.
+    top         component side
+    bottom      solder side
+
+###################################
+Component library paths specified:
+	System level: 
+	/etc/gEDA/system-gafrc
+	User level: 
+	~/.gEDA/gafrc
+e.g. 
+	(component-library "/home/tniles/pcb/Custom Symbols")
+
+##########
+Printing:
+    gSchem likes to print in postscript. Here are two ways to accomplish a good pdf:
+    1) Print an 8.5x11 in gSchem; do a 'ps2pdf fileName'; open the pdf and choose paper size
+    to print on, e.g. 11x17.
+    2) Print an 11x17 in gSchem; do a 'ps2pdf -sPAPERSIZE=11x17 fileName'; open the pdf and 
+    print.
+
+    In my experience, the 2nd option makes the most efficient use of the size of the paper.
+
+########
+Layers:
+    To set active layer press corresponding number key (e.g. 1, 2, 3 ... n).
+        For n>9, use ctrl+alt+num.
+    To toggle visible layer press ctrl and corresponding number key (e.g. ctrl+1 ... ctrl+n).
+
+##############
+Improvements:
+    Shortcut labels in toolbar gui (e.g. via "F1", line "F2",... or top "1", ground "2",...).
+        Think: tooltips?
+    Pads to accept thermal tool.
+
+##########################################
+gEDA policies for hw revision controls
+
+{{{ Details: integration of schematic and pcb layout cad files.
+    I would like to keep schem and layout files in the same directory. Is this reasonable?
+    Especially in terms of managing official releases/revisions? Reason: schematic should
+    drive the layout, which means changes are immediately relevant during the layout process.
+        YES: just requires a revision nomenclature. For example:
+            Schematics as "revXSch"
+            Layout as "revXPcb"
+            BOM as "revXBom"
+        Question: if the schematic drives the layout, aren't "revXSch" and "revXPcb" equal?
+        Answer: yes, yes they are (as well as "revXBom").
+            So, consider (for the sake of less total number of tags) having only "revX" and 
+            "revXBom", as parts can change without the need to revision drawings.
+            This would also mean that redlines/corrections should go into the work for the
+            following revision, and never backwards into the existing revision.
+}}}
+# SOLUTION
+    Single "revX" tag for schematic&layout&BOM, as they all go together.
+    Additional "revX.n" (e.g. revB.3) tags can be assigned for minor updates which should 
+    remain associated with produced "revX{.n}" boards.
+
+{{{ Details: timing of tagging revisions--when? (tags aren't supposed to move once published)
+    Do not tag Schematics or Layouts until boards are ordered for production (e.g. gerbers 
+    sent), just in case minor changes must be made prior to that point as they would likely
+    include changes to the schematic. This will help curb errant tags being published to other
+    devs.
+    General rule: wait as long as possible prior to tagging (preferably until time of first 
+    order of boards).
+    Mechanism: similar to gitflow workflow, although I think a full-blown gitflow workflow at
+    this time would be overkill (even if it would be "prettier").
+}}}
+# SOLUTION
+    When beggining work on the next rev (revX):
+        Assumes: "rev{X-1}" is already tagged and released
+        Create branch "revX/specificThingToWorkOn"
+        If necessary, create more branches, e.g. "revX/otherThingToWorkOn"
+        Push all revX branches to server to share with multiple devs (optional?)
+            # git push -u origin branchName
+        Merge either to master when complete (or only once tagged??)
+        Order boards with gerbers generated on master (gates tagging)
+        Now tag revision, referencing naming convention:
+            # git tag -a "tagName" shaVal
+            On master, Tag pcb at this commit for layout ("*RevX")
+            On master, Tag schematic at most recent commit relevant to the schematic ("*RevX")
+    # Wash, Rinse, Repeat
+    Work can now begin at anytime on branches "rev{X+1}/*"
+
+{{{ Details: reference vs embedding: does referencing symbols negate source control?
+    Yes. You lose the automatic update of component edits by embedding, but there is no other
+    way to ensure the same rev of schematic months later is exactly what it was months ago if
+    you do not embed all components.
+    Example: a symbol referenced in a scm'd cad file is replaced or moved. Now the
+    schematic is broken. How to prevent this? 
+        Thoughts: embedding would solve this, but then updates to parts would not propagate
+        automatically. Furthermore, this would make for a disjointed history (not
+        unrecoverable, e.g. 'git --follow file'), which would be painful and cause extra work.
+        Perhaps a good policy would be to: if ever a part moves or changes name, establish a
+        symlink to the newName from the oldName?
+    Example: is it always desirable that the part does not change (i.e. have an embedded 
+    behavior)?
+        Thoughts: The only thing I can think of is conflicts with "heavy parts/symbols". This
+        is a reference to the gEDA community debate about light versus heavy libraries. Light
+        symbols do not have specific attributes attached to them, such as layout footprints.
+        Heavy symbols include this information. I prefer heavy symbols because it keeps
+        everything in one place (a neat little package). My usual approach to managing these
+        parts is to have a "1N2222Sot23" and a "1N2222Soic6"
+    NOTE: embedded symbols can be updated via Edit > Update Component.
+}}}
+# SOLUTION
+    # Assumptions:
+    # * use of heavy symbols
+    # * the rev for the schem and layout *always* match. That is, rev B layout never
+    #   belongs to rev A schem. If rev X of either exist, the other must also have a
+    #   rev X. This is primarily driven by the schematic via use of heavy symbols and
+    #   autogeneration of the netlist.
+    Have a source controlled symbol library.
+    Draw schematic. 
+    Select All components, Edit > Embed Component.
+    Commit to repo.
+    Further edits will require Edit > Update Component to refresh all components.
+    # This becomes "Rev X" and will *always* be "Rev X". This is the required goal.
+    # When it is time to make Rev X+1, and components (symbols/footprints) have
+    # changed, you can update the symbol library without fear of changing data for rev
+    # X. As work is performed to created Rev X+1, simply Edit > Update Component to
+    # manually propagate the changes. This method results in updates occurring in a
+    # controlled, intentional fashion without circumventing source control or allowing
+    # multiple source controlled data to compete.
+
+{{{ ISSUE: does this methodology expand to geda footprints?
+    If symbols are heavy, then yes--you get this for free.
+    If symbols are light, then no--you now have two libraries to manage concurrently to
+    recreate the same revision of a particular design.
+    This is another good reason to use heavy symbols.
+
+    But how does the heavy symbol footprint linking work? Does it really embed the
+    footprint as well? Or are there still effectively two libraries to manage because the
+    footprints are referenced?
+}}}
+# SOLUTION
+    To reduce chances of mismatched libraries, keep the components and footprints in the same
+    source control repo.
+
+##########################################
+gEDA ckt project directory guidelines (a.k.a. STRUCTURE OF THE CKT DIRECTORY)
+
+Note: most of these are intended to be useful for the tools which automate production.
+
+Multiple repos named after the board or product.
+
+DirectoryNamedAfterBoardOrProduct/
+    .git
+    .gitignore
+    CAD Files (*.sch, *.pcb)
+    Bill Of Materials (*.xls, *.ods)
+    prints/
+        PDFs of latest source controlled files (can be autogen'd at any time using tools)
+    gerbers/
+        gerber files for source controlled files (use tools to autogen)
+
+NOTE: "prints/" and "gerbers/" should not be under source control. Their contents should
+always be autogen'd for consumption based on the latest revision of the cad files.
+
+
+FILE NAMING CONVENTION
+
+Preferably, the CAD files should begin with the directory name, which is the product 
+abbreviation. For compliance with the tools, they should be suffixed with the intended 
+schematic page number. For example, for the product "foo bar 7000", the directory may be 
+"foo7k", in which case the CAD files [*.sch|*.pcb] should be:
+
+    "foo7k_1.sch", "foo7k_2.sch", ... "foo7k_n.sch" and "foo7k.pcb".
+
+In the event of multiple boards, consider making each board its own project. At the same time,
+it is reasonable to share the same convention, e.g.:
+
+    "foo7kPower_1.sch", "foo7kPower_2.sch", ... "foo7kPower_n.sch" and "foo7kPower.pcb".
+
+The only exception to this naming convention is for a Bill of Materials (BOM) file. The BOM
+file should be named as follows:
+
+    "foo7kBom.ods" and "prints/foo7kBom.pdf"
+    "foo7kPowerBom.ods" and "prints/foo7kPowerBom.pdf".
+
+

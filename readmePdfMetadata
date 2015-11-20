@@ -1,0 +1,41 @@
+
+
+#################################
+Page labels (renumbering pages):
+
+What you want is indeed called page labels and can easily be added directly in the PDF's 
+source code. Rename the file extension from pdf to txt and open the file in a text editor 
+(this can be slow, depending on the file size, be patient). The information about page labels
+is stored in a node called the document catalog which looks something like this:
+
+3 0 obj
+<< /Type /Catalog
+   /Pages 1 0 R
+>>
+endobj
+
+It may contain more confusing stuff, but this is the basic structure. There is only one 
+catalog, so in a large file you can search for the node that contains /Catalog. Now you can 
+make your desired changes by inserting the /PageLabels entry:
+
+3 0 obj
+<< /Type /Catalog
+   /Pages 1 0 R
+   /PageLabels << /Nums [ 0 << /P (cover) >>
+                          % labels 1st page with the string "cover"
+                          1 << /S /r >>
+                          % numbers pages 2-6 in small roman numerals
+                          6 << /S /D >>
+                          % numbers pages 7-x in decimal arabic numerals
+                        ]
+               >>
+>>
+endobj
+
+There are 3 lines starting with numbers, called page indices. Page 1 has the index 0, page 2
+the index 1 and so forth. They always describe ranges, so the line with 1 <<...>> applies to
+all pages from index 1 to 5 and the line with 6 <<...>> applies to all pages from 6 up to the 
+last page. A label for 0 <<...>> must always be defined.
+
+You can find more information about page labels and PDF source code in the PDF standard or in 
+a wiki on PDF standards.

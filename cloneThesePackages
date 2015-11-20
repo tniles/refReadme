@@ -1,0 +1,43 @@
+SUGGESTED PACKAGES FOR CLONED SYSTEMS
+
+NOTE: some packages will not turn up unless you add to the /etc/apt/sources.list first.
+
+NOTE: this is not a complete list as some packages are default installed (e.g. cifs-utils),
+and some are better installed from source.
+
+avrdude
+avr-libc
+brasero
+dvipdf
+exuberant-ctags
+firefox
+ftp
+fuse
+geda
+gcc
+g++
+gcc-avr
+gigolo
+gimp
+git
+gnuplot
+gparted
+haveged
+htop 
+inkscape
+kdiff3
+octave
+openssl
+pdftk
+perl
+ps2eps
+python
+qtcreator
+ssh
+tar
+texlive
+texmaker
+tex-common
+xubuntu-desktop
+vim
+vim-gnome

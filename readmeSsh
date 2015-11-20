@@ -1,0 +1,79 @@
+
+SSH with X11 forwarding:
+    ssh -Y user@server
+
+Logs:
+    /var/log/secure
+
+To Create a SSH key:
+    ssh-keygen
+    ssh-keygen -t rsa -b 4096 -C "your@email.com"
+    Accept all defaults by simply pressing Enter at each prompt.
+    Don't enter a password unless you want to enter a password ad nauseam (bleh).
+    The id_rsa.pub is now available in ~/.ssh for sharing.
+
+    Ref: https://git-scm.com/book/en/v1/Git-on-the-Server-Generating-Your-SSH-Public-Key 
+
+Add a SSH key to a machine with an ssh server (passwordless login):
+    ssh-copy-id -i ~/.ssh/id_rsa.pub user@server
+
+    UBUNTU BUG! Requires more *after* ssh-copy-id: 
+        eval "$(ssh-agent -s)"
+        ssh-add                     # add private key to ssh system store
+
+    SELinux consideration:
+        Verify the security context type is user_home_dir_t (at the /home level) otherwise
+        this *will* cause issues with multiple user ssh connections. Also, the /home/user/.ssh
+        dir should have a context type of user_home_t.
+
+Known hosts file:
+    Sometimes you need to remove entries from your known_hosts file:
+        ssh-keygen -R hostName
+    Hashed file? This is because "HashKnownHosts" is set in your ssh_config (as it should be).
+        ssh-keygen -H -F hostName   # finds the line responsible for hostName
+    NOTE: this command assumes the typical port 22 for ssh, as it is part of the key entry.
+
+Log on to a remote machine from an authorized network: 
+    ssh -Y -l tniles foo.baz.bar.com    # url or ip
+
+Debugging a ssh connection:
+    Very simple, basically just whether or not ip addresses are correct/on the same network,
+    and whether a firewall is blocking. 
+
+    On both machines, run:
+        ip addr show
+        ip route show
+        sudo iptables -L -v
+    Verify ssh is listening on port 22:
+        ss -altn
+
+Login banners (will be seen by users logging in, e.g. via ssh):
+
+    Edit /etc/motd
+    Content is shown immediately after login, and before shell is started.
+
+    Edit /etc/issue.net
+    The content of this file is shown when a ssh session is connected and before the
+    authorization.
+    To enable this in ssh you have to follow this simple steps:
+        1. Create a /etc/issue.net file and fill it with the desired context
+        2. Edit /etc/ssh/sshd_config, to look like this Banner /etc/issue.net
+        3. Restart sshd, sudo service ssh restart
+
+    Sample banner 1:
+        Unauthorized access to this machine is prohibited
+        Press <Ctrl-D> if you are not an authorized user
+    Sample banner 2:
+        ********************************************************************
+        *                                                                  *
+        * This system is for the use of authorized users only.  Usage of   *
+        * this system may be monitored and recorded by system personnel.   *
+        *                                                                  *
+        * Anyone using this system expressly consents to such monitoring   *
+        * and is advised that if such monitoring reveals possible          *
+        * evidence of criminal activity, system personnel may provide the  *
+        * evidence from such monitoring to law enforcement officials.      *
+        *                                                                  *
+        ********************************************************************
+
+

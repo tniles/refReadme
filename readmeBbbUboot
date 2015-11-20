@@ -1,0 +1,62 @@
+uboot and BBB readme
+
+################################################################################
+THE SETUP
+
+Add your board config to the top-level boards.cfg file.
+
+
+################################################################################
+THE MAKE PROCESS
+
+make $(boardName)_config        # e.g. my_beagle_config
+
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi-
+
+make distclean                  # this will clean and remove the config stuff
+
+You will end up with a MLO and a uImage file.
+
+
+################################################################################
+U-BOOT DRIVERS, ETC.
+
+We were able to hookup an LCD screen via UART and draw on it using a u-boot 
+command. Here is a general guideline:
+
+    0.) Enable the u-boot code via your board line in boards.cfg which in turn
+        should activate code within your board support package (e.g.
+        board/my/my_beagle/board.c) via generated defines in include/config.h.
+    1.) Create a u-boot command in common/hush.c
+        * this uses U_BOOT_CMD macro which uses a func ptr to activate your code
+    2.) Configure the (UART) driver in include/configs/my_beagle.h (e.g.
+        #define BAUD 9600)
+    3.) Identify the correct calls to the u-boot built-in driver, e.g.
+        * a good place to start looking for these is in the include dir for
+        whatever driver you want to use (e.g. include/serial.h for UART).
+
+
+################################################################################
+U-BOOT RUNTIME OPERATION STUFF
+
+See comments at top of arch/arm/lib/crt0.S
+
+Every board/target begins execution with its start.S
+    e.g.  arch/arm/cpu/armv7/start.S
+which then calls into arch/arm/lib/crt0.S
+which then calls into both board_init_f() and then into board_init_r().
+
+
+###############################################################################
+Uboot call structure
+
+start.S - this is cpu-specific code containing the reset vector
+  _main - general code for all arm processors
+    board_init_f - iterates over list of function pointers calling each one. hang if error
+                   I believe the f stands for flash... on many systems, the code will be
+                   running from flash memory before relocate_code is called below
+    relocate_code - copy code to new location, return to the new code by hacking the link register.
+                    on many systems this would relocate code from flash to ram
+    board_init_r - I believe the r stands for ram... at this point the code is running from ram
+                   never returns, calls main_loop
+

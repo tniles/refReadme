@@ -1,0 +1,891 @@
+################################################################################
+GIT COMMANDS
+
+Get most recent commit hash val
+    git rev-parse {--short|--verify} HEAD
+    -or-
+    git log | grep -m 1 commit
+        
+        Try: git-show-ref
+        Try: git-for-each-ref
+
+Explore an older commit (stash any working copy changes first)
+    git checkout -b <temp-branch-name> <sha-val>
+
+Stashing commits
+    git stash save  # pushes working copy onto stack
+    git stash pop   # pop stash stack (remove from stack)
+    git stash apply # apply stash without popping (retain stack)
+
+Push a branch to remote
+    git push origin <branch>
+    -or-
+    git push -u origin <branch>     # enforce tracking between local&remote branches
+                                    # may not be necessary depending on your git-config
+
+Diff between two branches
+    git diff <branchOne> <branchTwo>
+
+Diff between two commits (multiple commits apart)
+    git diff <shaOne> <shaTwo> -- <filename>
+
+Show remote branches
+    git branch -r
+
+Delete a branch on remote and then locally
+    git push origin :<branch>
+    git branch -d <branch>
+
+Pull a remote branch that you don't have locally already
+    git fetch origin <branch>:<branch>
+    # Note: 'fetch' by itself is always safe (won't clobber anything)
+
+List remotes:
+    git remote
+
+Add a remote:
+    git remote add name link
+        e.g., git remote add origin /srv/gitLocal/repo.git
+        -or-  git remote add origin user@server:proj/repo.git
+
+Want to get a copy of a new branch and maintain tracking? Here's how:
+    git checkout --track origin/branchName
+    or simply:
+    git checkout branchName     # and if the repo is configured correctly, this will track
+                                # automatically and give you a local branch.
+
+****ISSUE: why do `gco -t origin/branch` and `git fetch origin branch:branch` operations 
+    differ?
+
+Show tracking status of remote:
+    git remote show origin
+
+Which remote is the branch tracking?
+    Method 1: git branch -vv
+    Method 2: git rev-parse --abbrev-ref master@{upstream}
+
+Git command on multiple repos:
+    # for fh in `ls`; do cd $fh ; pwd && git status ; cd ..; done
+    # for fh in `ls`; do cd $fh ; pwd && git remote -v ; cd ..; done
+    # 'foreach' is a command for submodules
+    #alias gfe='git submodule foreach --recursive'
+
+Clone with submodules
+    git clone --recursive <link>
+
+Update to latest committed versions of all submodules (starting from the parent repo)
+    git submodule update --init --recursive
+
+Add a submodule (must be at .git level of parent)
+    git submodule add <link> <path>
+        e.g. git submodule add git@mygithost:billboard lib/billboard
+
+Make submodule point to a particular branch
+    Switch to that branch, then commit it, then cd up and update the submodules.
+
+Remove a submodule
+    git submodule deinit <name>
+    git rm <name>
+       -or-
+    git submodule rm <path>
+
+Identify submodules in a project:
+    git ls-tree -r --name-only <branch>
+    git submodule foreach --recursive git rev-parse HEAD
+
+Identify the commit of submodules in a project:
+    git ls-tree -r <branch>
+
+Remove obsolete branches (Update list of remote branches)
+    git fetch --prune
+However, if the branch was deleted on the remote first, which may have been
+similarly named, local repos will still remember and error on this conflict.
+Solve this by using:
+    git remote prune origin
+
+Clean the repo, then subrepos
+    git clean -ffxd
+    git submodule foreach recursive clean -ffxd
+    To *really* clean the repo out:
+        git clean -ffxd && git submodule foreach git clean -ffxd && git submodule foreach git fetch --prune && git pull && git submodule update --init --recursive
+
+Odd errors
+    "fatal: You are on a branch yet to be born" or
+    "Unable to checkout submodule 'components/featureX'"
+    These mean you need to delete the matching path in your .git directory.
+
+You meant to be on a branch but now you have all sorts of changes on master.
+    git branch <newBranchName> origin/master
+    <switch to branch newBranchName>
+    git merge master
+    <now you can reset master>
+    git reset --hard origin/master
+
+#Try sometime: Rebase with Pull:
+#    git pull --rebase
+
+Rebase local commits (squashing)
+    git rebase -i HEAD~n
+
+Handy for the rebasing process:
+    git rebase --continue
+    git rebase --abort
+
+Rebase on top of another branch (e.g. master)
+    git rebase master
+
+# NOTE: if dealing with more complex matters, see man 'git-cherry-pick'
+# NOTE: deleted/lost commits? not even in the reflog? see 'man git-fsck' (--unreachable)
+
+Git rid of (delete) the last commit, or n commits
+    git reset --soft HEAD^
+    git reset --soft HEAD~n
+
+Git rid of all local commits and changes in the working directory
+    git reset --hard origin/master
+
+# NOTE: --soft only resets the HEAD ref, --mixed resets HEAD and Index refs, and --hard resets
+#       all three trees/refs: HEAD, Index, and Working Directory.
+Table explaining git reset (from git-scm.com):
+    Commit Level                head    index   work dir    wd safe
+    reset --soft [commit]       REF     NO      NO          YES
+    reset [commit]  REF         YES     NO      YES         
+    reset --hard [commit]       REF     YES     YES         NO
+    checkout [commit]           HEAD    YES     YES         YES
+    File Level   
+    reset (commit) [file]       NO      YES     NO          YES
+    checkout (commit) [file]    NO      YES     YES         NO
+
+Ignore changes to files in the git status report 
+(can still update at a later point in time using git add <fileName> as usual)
+    git update-index --assume-unchanged <fileName>
+
+Create release tags             # useful for versioning/landmarking official releases
+    # heavyweight/annotated tag, creates a full git object
+    git tag -a "tagName" shaVal
+        e.g. git tag 1.0.0 1b2e1d63ff
+    git tag -a -m "message" "tagName" shaVal
+    # lightweight tag (do not use the -a, -s, or -m options): NOT preferred as tools such as
+    # 'git describe' will not process these types of tags.
+    # git tag "tagName" shaVal
+    #     e.g. git tag 1.0.0 1b2e1d63ff
+
+    NOTE: pushes do not push tags unless --tags is specified
+        git push --tags         # push all tags
+        git push origin tagName # only push tag tagName
+
+    Tags will appear in graphical history display tools and look like branch labels (refs!).
+
+Move a tag (re-tagging):
+    READ THE MAN PAGE! (ref: "on Re-tagging")
+    # not something you want to be in the practice of doing, but it will happen at some point:
+    Simply add the -f,--force flag and reissue the same tag command. This will preserve your
+    tag's description. E.g.
+        git tag -a v2.56 8bad64f6e9 -f
+    # if your central repo has force pushes disabled, you will only ever be able to move tags
+    # around locally (this is why it's not a good practice to move them).
+    Someone else moved a tag on the server and your local one is obsolete now?
+        git tag -d v2.56 ; git fetch
+
+Tags issue? Not sure which tag dev A and dev B have?
+    git rev-parse tagName       # returns the shaVal associated with the tag
+
+Review tags
+    git tag             # to see tags
+    git tag -l 'regExp' # use a regular expression to search tags
+    git show tagName    # see details for tag tagName
+
+Create a branch based on a tag commit:
+    git checkout -b branchName tagName
+    # be careful! you don't want changes committed here to be confused with the existing tag,
+    # so mind the history/log before and after if you must meddle.
+
+Find the commit number that introduced the line "string"
+    git log -S "string" --source --all
+    Pair with finding the latest SHA of file "file"
+    git ls-files -s "file"
+
+
+################################################################################
+GIT LOG
+    git log --author=bob
+    git log --pretty=oneline
+    git log --graph --oneline --decorate --all
+    git log --name-status
+For more, see
+    git log --help
+
+
+################################################################################
+GIT SPEEDUP ON WINDOWS (ymmv)
+    git config --global core.preloadindex true
+    git config --global core.fscache true
+    git config --global gc.auto 256
+
+
+################################################################################
+GIT CONFIG
+    git config --global color.ui true
+
+
+################################################################################
+GIT UPSTREAM BRANCH TRACKING (SCRIPTED EXAMPLE)
+
+while read branch; do
+  upstream=$(git rev-parse --abbrev-ref $branch@{upstream} 2>/dev/null)
+  if [[ $? == 0 ]]; then
+    echo $branch tracks $upstream
+  else
+    echo $branch has no upstream configured
+  fi
+done < <(git for-each-ref --format='%(refname:short)' refs/heads/*)
+
+# Output:
+# master tracks origin/master
+# ...
+
+
+################################################################################
+GIT MOVE FILES WHILE KEEPING HISTORY
+
+There are several ways described online as to how to go about this. Most of them make use of
+the filter-branch subcommand. The following is a simple approach which accomplished what I 
+needed it to: moving files, with their history, from one repo into another.
+
+NOTE: leverage everything from 'ls' to 'git log' to 'git status' to verify these actions as
+you progress through them. However, recognize they may not show you what you expect even
+though everything is progressing as it should be.
+
+repoA -- existed for some time and holds the files to be moved
+repoB -- new home for files to be moved (may or may not have future history for the same
+         files, e.g. in the case where they were moved and modified prior to this effort)
+
+backup both repos
+clone repoB
+remove remote from repoB (to avoid accidental pushes)
+remain on the main branch, e.g. master
+add repoA as the new remote
+fetch
+git branch -a should show branches master and remotes/repoA/master
+git rebase -i remotes/repoA/master
+fix any misses (viewable with git status), and git rm unwanted files originating from repoA
+use git add to mark conflicts as resolved (note, do nothing with the deleted files)
+ls and git status to make sure everything looks correct
+git rebase --continue
+remove all remotes
+verify git log is as desired/expected
+verify files are as desired/expected
+
+Congrats! This is your new/combined repo. If repoB was already published (i.e. out in the 
+wild), you now have two basic choices for how to proceed and publish the new repoB. This is
+because you will not be able to push to another (e.g. centralized on a server) repo because 
+this will not be a fast-forward merge. Further, if force pushes (--force) are disabled, you 
+won't be able to overwrite it, either.
+    1) Repackage and publish this new repo in place of the old published one.
+    2) Pull (fetch+merge) the published repo, resolve any conflicts, then push.
+        NOTE: this will make the log look funny, but you cannot squash the commits as this
+        will make it once again a non-fast-forward merge. This is probably preferred, as then
+        the complete history (e.g. including the point from which dev on repoB diverged) is 
+        intact and logged for future reference.
+
+    NOTE: regardless of which of the above methods you use, at this point every dev should be
+    advised to rm/backup their existing repoB and to re-clone repoB. Otherwise, subsequent 
+    pulls will make a mess because they like to add an additional, unnecessary merge commit.
+
+
+################################################################################
+GIT MISC
+
+Sharing between linux and windows dev environments or devices (email excerpt):
+
+    In this case, Windows and Linux are sharing a repository (database), but not a working 
+    directory. This approach is definitely safer than sharing a working directory. It's still
+    possible to get things tangled up, though; after a push from Windows, the files on the 
+    remote side will show as modified in `git status`, even if they're not.
+
+    The way around that is to have two repos on your DUT: one with a working copy that you 
+    edit in, and a common (bare) repository that both the DUT working copy and the Windows 
+    working copy push/pull to.
+
+    Sounds complicated, but the short rule of thumb is: never push to a non-bare repository 
+    (a repository with a working copy attached).
+
+    It's safe to share a server repository between Linux and Windows, but a little dangerous 
+    to share a working directory between the two. Line endings and file status can get really
+    tangled up.  In general, a given working directory should only be read/written from one 
+    copy of Git.
+
+RECIPE:
+    * Better to have the bare repo on the linux side (you get the ssh server for free, as 
+      opposed to needing to set one up on the windows side)
+    * You can do without a bare repo if you strictly adhere to a "pull only" workflow (git 
+      originally designed for this use case), however this limits you to ping-pong commits 
+      only
+    * clone from the bare repo (to linux and windows)
+    * only push/pull to the bare repo
+    1) from Linux, cd to ~/repos and git clone --bare --recursive <link>
+    2) from host/windows, 
+        ssh-copy-id <username>@<ip-address>
+    3) clone from the bare repo to your linux dir and windows folder, e.g.
+        git clone ~/repos/foo       # from linux (<bareRepo> will clone into <repo>)
+        git clone ssh://<username>@<ip-address>:<port#>/home/tniles/repos/foo # from windows
+        NOTE: verify your ssh public key exists in ~/.ssh and it may be necessary to copy that
+        public key to the device's ~/.ssh/authorized_keys
+    4) use 'git add remote <name> <link>' to hookup any other remotes, e.g. stash (git web 
+       interface)
+
+
+################################################################################
+CONNECTING SOURCETREE TO NETWORKED DEVICE
+
+    Copy public SSH key from your PC to your device
+    ssh-copy-id <username>@<ip-address-of-device>
+    (see section "Cygwin, SourceTree, and SSH")
+    If you don't have ssh-copy-id installed, find another way to copy the text of your local 
+    id_rsa.pub and append it to the device's ~/.ssh/authorized_keys. For example, if this 
+    is a brand new account and the authorized_keys file does not exist yet, you can use 
+        "scp id_rsa.pub <user>@<device>:~/.ssh/authorized_keys"
+    NOTE: you will have to do steps 2-7 for each sub-repo because the path in step 4 will be 
+    different.
+        In SourceTree, click Repository >> Repository Settings
+        On the remotes tab, click add
+        In the name column, give your device a name (e.g. DUT)
+        In the Path column, put
+            <username>@<ip-address-of-device>:<full-path-to-repo-on-device>
+            e.g. tniles@124.26.34.115:/home/tniles/my/files
+        Now click fetch and you will see your device appear under the remotes list in the 
+        left pane
+        Check the "Show Remote Branches" box at the top of the screen. You will see your 
+        device's branches appear in the history diagram.
+
+    If it doesn't connect, make sure the device is running an SSH server and is connected 
+    to the network, and that you spelled the path and IP address correctly in step 5.
+
+{{{ VERBOSE:
+// Connecting SourceTree to networked device
+=================================================
+NOTE: you will have to do this for each sub-repo
+      because the path in step 4 will be different
+1. Copy public SSH key from your PC to your device
+       ssh-copy-id <username>@<ip-address-of-device>
+       (see section "Cygwin, SourceTree, and SSH")
+2. In SourceTree, click Repository >> Repository Settings
+3. On the remotes tab, click add
+4. In the name column, give your device a name (e.g. DUT)
+5. In the Path column, put <username>@<ip-address-of-device>:<full-path-to-repo-on-device>
+   e.g. tniles@124.26.34.115:/home/tniles/my/files
+6. Now click fetch and you will see your device appear under the remotes list in the left pane
+7. Check the "Show Remote Branches" box at the top of the screen.  You will see
+   your device's branches appear in the history diagram
+
+If it doesn't connect. Make sure the device is running
+an SSH server and is connected to the network.
+
+// Cygwin, SourceTree, and SSH
+=================================================
+If you use SourceTree and SSH from cygwin, then
+you can simplify things by symlinking cygwin's
+.ssh directory to SourceTree's .ssh directory. Then
+you can use a single SSH key for everything.  Having
+more than one SSH key can be confusing.
+
+First, find out where sourcetree puts its .ssh directory.
+In SourceTree, click Terminal, and type:
+  cd ~/.ssh
+  pwd
+
+Note the drive letter. Then, from a cygwin shell type:
+  rm -rf ~/.ssh
+  ln -s /cygdrive/<drive_letter>/.ssh ~/.ssh
+
+Now go to your stash profile, click Manage Account >> SSH keys, and 
+delete the separate ssh key that you previously had for cygwin,
+if applicable.
+}}}
+
+
+################################################################################
+How to set up normalized line endings in a git repo
+
+Normalizing line endings can help streamline work between multiple platforms (e.g. Linux and 
+Windows).  For example, shell scripts need to have unix line endings in order to execute 
+properly on a unix system.  If somebody touches the file on a windows machine, they might 
+insert some DOS line endings and break the script for unix users.  Furthermore tools like 
+ctags and vim can get confused if some of the files have unix line endings and some of the 
+files have DOS line endings and some files have a mix of both.  Some teams solve this problem
+by modifying the .gitconfig file in each developer's environment. This procedure removes the 
+burden of managing line endings from the developer -- e.g. a new team member can just check
+out the repo and get the right line endings for their system without having to modify their 
+environment.
+
+    Save any work in progress (use "git stash" or do a checkpoint commit)
+
+    checkout a new branch
+    git checkout -b mybranch
+
+    add a .gitattributes file.  This file tells git to normalize line endings upon commit and
+    to convert to the system's native line endings upon checkout.  This file also tells git 
+    which files are considered to be text files.  Here is an example file.
+    # normalize line endings
+    # From the git documentation: "This ensures that all files that Git considers
+    # to be text will have normalized (LF) line endings in the repository."
+    # But files will have native line endings when checked out into the working directory.
+    * text=auto
+     
+    # tell git which files should be normalized (i.e. which files are text)
+    *.txt text
+    *.cpp text
+    *.c text
+    *.h text
+    *.hpp text
+
+    commit the .gitattributes file
+    git add .gitattributes
+    git commit -m "added .gitattributes file"
+
+    remove every file from git's index.
+    git rm --cached -r .
+
+    rewrite the git index to pick up all the new line endings
+    git reset --hard
+
+    Add all your changed files back and prepare them for a commit. This is your chance to 
+    inspect which files, if any, were changed.
+    git add .
+    # it is perfectly safe to see a lot of messages here that read
+    # "warning: CRLF will be replaced by LF in file."
+
+    commit the changes to the repository.
+    git commit -m "Normalize all the line endings"
+    Test the new commit on both linux and windows.
+    Submit a pull request
+
+
+################################################################################
+===============================
+how to set up a new shared repo
+===============================
+
+###############
+## REPO SIDE ##
+###############
+# setup bare "server" repository
+mkdir <repo_name>
+cd <repo_name>
+git init --bare  # the bare option means that this repo will have no working copy. it is basically just the contents of the .git folder in a normal repo
+git config core.sharedRepository group   # when you push, files written to this repo will have group permissions, allowing other people to push
+
+###############
+## USER SIDE ##
+###############
+# setup working repo, add initial files, and push to origin
+mkdir ~/repo_name
+cd ~/repo_name
+git init
+git add my_files
+git commit
+git remote add origin /home/gitLocal/repo_name
+git push origin master
+
+
+===============================
+git config
+===============================
+You may find that git complains about which branch to pull from. Add the 
+following to your git config:
+
+branch ["master"]
+    remote = origin
+    merge = /refs/heads/master
+
+
+===============================
+Now someone can't push to the group repo... what happened?!
+===============================
+This likely means that no one did a chgrp on the repo since it was created. For
+example, if your linux group is "gitLocal", then you need to go to your repo and
+    chgrp -R gitLocal <repoDir>
+and this will allow everyone in the group to push/pull with no worries.
+
+
+################################################################################
+SSH AGENT
+
+ssh-agent bash
+ssh-add /home/tniles/.ssh/id_rsa
+ssh-add -l
+
+
+################################################################################
+CYGWIN STUFF
+
+Find a program by package:
+    cygcheck -p strings.exe
+
+
+################################################################################
+CSCOPE quick start
+
+If you want to include only source code files with cscope then do this:
+
+find . -name "*.cpp" -o -name "*.[ch]" > cscope.files
+                then type:
+cscope -b -q -R
+
+You cscope database is now created.
+When you invoke cscope type:
+cscope -d   // prevents database from getting rebuilt everytime you start cscope
+
+
+################################################################################
+Source code browsing quick start
+
+sudo apt-get install exuberant-ctags
+sudo apt-get install id-utils
+sudo apt-get install cscope
+
+Then to build the databases for the tools, type:
+cd ~/path/to/project
+mkid .
+ctags -R
+cscope -R
+
+
+################################################################################
+Git Server (cli/ssh)
+
+You can just set up an ssh server and run a central repository there. All developers then
+simply agree (as a matter of policy) to push to the server when they are done making
+commits. This is the usage pattern at my workplace. Very CVS and SVN-like.
+
+    NOTE: by convention, bare repository directories are named *.git
+
+    ASSUMES: a running linux server you can admin, and devs with ssh keys.
+        
+SETUP
+    * Server: Find somewhere to put the repository, for example:
+        mkdir /var/www/yourserver && cd /var/www/yourserver
+
+    * Server: Create a new repo
+        mkdir proj.git && cd proj.git && git init --bare --shared=group
+        # Note: be careful with the 'shared' option. See man page. This should only be done on
+        # the server's bare repo, and not on an existing repo on your local machine AFAIK.
+
+    * Client: Serve an existing repo
+        for rh in `command ls`; do echo "git clone --bare $rh $rh.git"; done
+        for fh in `command ls | command grep git`; do echo "scp -r $fh user@server:/home/git/repos" ; done
+        # recommend using 'echo' to verify command first
+
+    * SELinux considerations:
+        semanage fcontext -a -t httpd_git_content_t "/home/gituser(/.*)?"   # modify context
+        restorecon -R -v /home/gituser/                                     # kick selinux
+
+TEST
+    * Client: clone the remote repo
+
+        git clone user@yourserver:proj/proj.git             # ssh relative path, e.g. proj is 
+                                                            # really ~/proj (preferred)
+        -OR-
+
+        git clone ssh://user@server/abs/path/to/proj.git    # abs path required
+        git clone ssh://user@server/~/proj/proj.git         # equivalent
+
+    * Client: cd proj
+              add some files (git add README)
+              commit (git commit -m "Initial import")
+              push (git push origin master)
+
+    This should set things up for you. Note that "server" could also be "server.com".
+
+SECURITY, Read&Write Access:
+
+  Option 1: accounts on server for each user, adding each user to a 'gitdev' group
+    Rather than using the www-data/apache group, for the repos, use a separate 'gitdev' group
+    which can be applied to the git repos under a index website (so users can view available
+    repos from a browser). That is, a website page showing the index of the directories
+    (group: apache), with subdirectories of *.git (group: gitdev).
+
+  Option 2 (PREFERRED): single 'git' user with ssh keys
+    Rather than upkeep user accounts on the server for every developer, create a single user
+    'git' on your server (must have rw access on the bare repos). Every user deemed to have a
+    write access provides the admin a ssh key to be placed in the 'git' user's
+    ~/.ssh/authorized_keys file. Commit data is unaffected (i.e. it will be the actual
+    developer's name on commits). E.g.
+        $ cat /tmp/id_rsa.john.pub >> ~/.ssh/authorized_keys
+        $ cat /tmp/id_rsa.josie.pub >> ~/.ssh/authorized_keys
+        $ cat /tmp/id_rsa.jessica.pub >> ~/.ssh/authorized_keys
+        ...
+    Note the ">>" (append), not ">" (overwrite).
+
+    Ease ssh auth restrictions on files (prevent SSH from refusing to work):
+        chmod -R go= .ssh
+
+    Now users can access the files, e.g.:
+        $ git clone git@server:/opt/git/project.git
+
+  Harden the git account (enable the limited git-shell for the 'git' user):
+    sudo vim /etc/passwd
+        Edit line "git:x:1000:1000::/home/git:/bin/sh"
+            to "git:x:1000:1000::/home/git:/usr/bin/git-shell".
+    This will provide only git commands to anyone with access to the git user via ssh. Yay!
+
+  Harden all repos (disallow force pushes and other deletion methods):
+    git config --system receive.denyNonFastForwards true
+    git config --system receive.denyDeletes true
+    # Note: applies to all branches, not just master. To fine tune to apply to certain 
+    # branches, requires a git hook script (pre-push/update).
+
+  To allow world read access, set up http fetching. See
+    https://git-scm.com/book/en/v1/Git-on-the-Server-Public-Access
+
+
+################################################################################
+Git Web Interface (gitweb/simple)
+
+ASSUMES: a working (apache) webpage/server named 'server' browsable at http://server (i.e. dns
+         is set up) on Centos 6.
+
+Almost always preferable to use packages unless you really want to dive into source code:
+    yum install gitweb      # centos 6
+    This will place /var/www/git and the config file /etc/gitweb.conf on your system.
+
+Disable default gitweb installed apache configuration:
+    Comment out everything in /etc/httpd/conf.d/git.conf
+
+Add user to server (if not using an advanced access control, such as gitolite):
+    adduser gituser
+    passwd gituser          # choose a secure phrase
+    # NOTE: this needs to be a secure password the admin can use to access the account, and to
+    # prevent passwordless access. DO NOT GIVE IT OUT TO DEVS/OTHERS! To enable cloning for 
+    # devs/others, they must mail the admin a key and the admin should append it to the 
+    # appropriate 'user/.ssh/authorized_keys' file (details elsewhere in these readme* docs).
+
+Place the default gitweb folder where you want it:
+    mv /var/www/git /home/gituser/gitweb
+
+Modify gitweb files to reflect your desired setup:
+    vim /var/www/html/gitweb/gitweb.cgi
+        our $projectroot = "/home/gituser/repos";
+        our $projects_list = "/home/gituser/projects.list";
+
+Projects file index--this file is LIVE: changes will be seen immediately on the server:
+    vim /home/gituser/projects.list
+    # projects listed here (e.g. yourRepo.git) assume the format of $projectroot/yourRepo.git
+
+Modify SELinux context for files outside of the default gitweb locations:
+    semanage fcontext -a -t git_sys_content_t “/home/gituser(/.*)?” # adds policy
+    restorecon -R -v /home/gituser/    # kicks SE to relabel according to new policy
+    setsebool -P git_cgi_enable_homedirs on     # necessary for repos in home dir
+
+    # Note: absolute paths required.
+
+Configure ownership and apache:
+    DOCUMENTED WORKING EXAMPLE (ADVANCED):
+{{{ NOTE: in this example, all repos were contained under /home/git/ckt and /home/git/src
+    and the apache config is certainly an important part of this working correctly.
+
+    $ ll -Z /var/www/html | grep git
+    drwxr-xr-x. root apache unconfined_u:object_r:httpd_sys_content_t:s0 gitwebCkt/
+    drwxr-xr-x. root apache system_u:object_r:httpd_git_content_t:s0 gitwebSrc/
+
+    $ ll -Z /var/www/html/gitweb* 
+    /var/www/html/gitwebCkt:
+    lrwxrwxrwx. root root unconfined_u:object_r:httpd_sys_content_t:s0 ckt -> /home/git/ckt/
+    /var/www/html/gitwebSrc:
+    lrwxrwxrwx. root root unconfined_u:object_r:httpd_git_content_t:s0 src -> /home/git/src/
+
+    $ ll -Z /home | grep git
+    drwx-----x. git   git   unconfined_u:object_r:user_home_dir_t:s0 git/   # note o+x
+
+    $ ll -Z /home/git
+    drwxr-xr-x. git apache unconfined_u:object_r:httpd_git_content_t:s0 ckt/
+    drwxr-xr-x. git apache unconfined_u:object_r:httpd_git_content_t:s0 src/
+
+    # NOTE: in the following, there are two important type contexts: httpd_git_content_t and 
+    # httpd_git_script_exec_t and these are for files and the executable *.cgi, respectively.
+    $ ll -Z /home/git/*
+    /home/git/ckt:
+    drwxr-xr-x. git apache unconfined_u:object_r:httpd_git_content_t:s0 newRepo.git/
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 git-favicon.png
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 git-logo.png
+    -rwxr-xr-x. git apache system_u:object_r:httpd_git_script_exec_t:s0 gitweb.cgi*
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 gitweb.css
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 gitweb.js
+    -rw-r--r--. git apache unconfined_u:object_r:httpd_git_content_t:s0 projects.list
+    /home/git/src:
+    drwxr-xr-x. git apache unconfined_u:object_r:httpd_git_content_t:s0 newRepo.git/
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 git-favicon.png
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 git-logo.png
+    -rwxr-xr-x. git apache system_u:object_r:httpd_git_script_exec_t:s0 gitweb.cgi*
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 gitweb.css
+    -rw-r--r--. git apache system_u:object_r:httpd_git_content_t:s0 gitweb.js
+    -rw-r--r--. git apache unconfined_u:object_r:httpd_git_content_t:s0 projects.list
+
+    $ cat /home/git/*/projects.list
+    newRepo.git your@email.com
+    newRepo.git your@email.com
+
+    $ vim /home/git/ckt/gitweb.cgi
+        our $projectroot = "/home/git/ckt";
+        our $projects_list = "/home/git/ckt/projects.list";
+
+    $ vim /home/git/src/gitweb.cgi
+        our $projectroot = "/home/git/src";
+        our $projects_list = "/home/git/src/projects.list";
+
+    Apache Config:
+    {{{
+        <VirtualHost *:80>
+            ServerName http://server
+            ServerAdmin admin@server
+
+            DocumentRoot /var/www/html/myWebSite
+            <Directory "/var/www/html/myWebSite">
+                Options None
+                AllowOverride None
+                Order allow,deny
+                allow from all
+            </Directory>
+
+            Alias /ckt /var/www/html/gitwebCkt/ckt
+            <Directory "/var/www/html/gitwebCkt">
+                Options ExecCGI FollowSymLinks
+                AllowOverride None
+                order allow,deny
+                Allow from all
+                AddHandler cgi-script .cgi
+                DirectoryIndex gitweb.cgi
+            </Directory>
+
+            Alias /src /var/www/html/gitwebSrc/src
+            <Directory "/var/www/html/gitwebSrc">
+                Options ExecCGI FollowSymLinks
+                AllowOverride None
+                order allow,deny
+                Allow from all
+                AddHandler cgi-script .cgi
+                DirectoryIndex gitweb.cgi
+            </Directory>
+
+            ErrorLog /var/log/httpd/error.log
+
+            # Possible values include: debug, info, notice, warn, error, crit,
+            # alert, emerg.
+            LogLevel warn
+
+            CustomLog /var/log/httpd/access.log combined
+
+            Alias /doc/ "/usr/share/doc/"
+            <Directory "/usr/share/doc/">
+                Options Indexes MultiViews FollowSymLinks
+                AllowOverride None
+                Order deny,allow
+                Deny from all
+                Allow from 127.0.0.0/255.0.0.0 ::1/128
+            </Directory>
+
+        </VirtualHost>
+    }}}
+
+    No changes to /etc/gitweb.conf were necessary. Apparently this is supposed to be the 
+    config file for gitweb, but gitweb.cgi does not seem to consume it. I verified changing 
+    the file from root:root to git:git did not affect this.
+}}}
+
+    DOCUMENTED WORKING EXAMPLE (ADVANCED, TWO GIT USERS):
+{{{ NOTE: Same as previous example, exception the following:
+# use addgroup to add a group 'gitdev' and usermod to join your git users under this group
+root@server: $ pwd
+/home
+
+root@server: $ ll -Z | grep git
+drwx--x--x. gitckt gitdev unconfined_u:object_r:user_home_dir_t:s0 gitckt/
+drwx--x--x. gitsrc gitdev unconfined_u:object_r:user_home_dir_t:s0 gitsrc/
+
+root@server: $ ll -Z git*
+
+gitckt:
+drwxr-xr-x. gitckt gitdev unconfined_u:object_r:httpd_git_content_t:s0 proj1.git/
+drwxr-xr-x. gitckt gitdev unconfined_u:object_r:httpd_git_content_t:s0 proj2.git/
+drwxr-xr-x. gitckt gitdev unconfined_u:object_r:httpd_git_content_t:s0 proj3.git/
+lrwxrwxrwx. root   gitdev unconfined_u:object_r:httpd_git_content_t:s0 binLin.git ->
+/home/gitsrc/binLin.git/
+-rw-r--r--. gitckt gitdev system_u:object_r:httpd_git_content_t:s0 git-favicon.png
+-rw-r--r--. gitckt gitdev system_u:object_r:httpd_git_content_t:s0 git-logo.png
+-rwxr-xr-x. gitckt gitdev system_u:object_r:httpd_git_script_exec_t:s0 gitweb.cgi*
+-rw-r--r--. gitckt gitdev system_u:object_r:httpd_git_content_t:s0 gitweb.css
+-rw-r--r--. gitckt gitdev system_u:object_r:httpd_git_content_t:s0 gitweb.js
+-rw-r--r--. gitckt gitdev unconfined_u:object_r:httpd_git_content_t:s0 projects.list
+
+gitsrc:
+drwxrwxr-x. gitsrc gitdev unconfined_u:object_r:httpd_git_content_t:s0 binLin.git/
+drwxr-xr-x. gitsrc gitdev unconfined_u:object_r:httpd_git_content_t:s0 projA.git/
+drwxr-xr-x. gitsrc gitdev unconfined_u:object_r:httpd_git_content_t:s0 projB.git/
+drwxr-xr-x. gitsrc gitdev unconfined_u:object_r:httpd_git_content_t:s0 projC.git/
+-rw-r--r--. gitsrc gitdev system_u:object_r:httpd_git_content_t:s0 git-favicon.png
+-rw-r--r--. gitsrc gitdev system_u:object_r:httpd_git_content_t:s0 git-logo.png
+-rwxr-xr-x. gitsrc gitdev system_u:object_r:httpd_git_script_exec_t:s0 gitweb.cgi*
+-rw-r--r--. gitsrc gitdev system_u:object_r:httpd_git_content_t:s0 gitweb.css
+-rw-r--r--. gitsrc gitdev system_u:object_r:httpd_git_content_t:s0 gitweb.js
+-rw-r--r--. gitsrc gitdev unconfined_u:object_r:httpd_git_content_t:s0 projects.list
+
+root@server: $
+}}}
+
+Restart Apache          # may not always be necessary, but is the safe route
+
+* Can now visit http://server to view your repos.
+* Can now download a tarball by clicking repo.git > tree > snapshot.
+
+Add a 'cloneurl' plain ascii file to each repo with the link to be displayed for cloning, e.g.
+    echo "git clone gituser@server:/proj/repo.git" > repo.git/cloneurl
+
+
+################################################################################
+Try sometime: Git Read-Only over HTTP/S Server
+
+Need to edit hooks/post-update, reference:
+    https://git-scm.com/book/en/v1/Git-on-the-Server-The-Protocols
+
+This allows others to '$ git clone http://example.com/gitproject.git', and the hook will
+provide necessary updates after developers push to the repo.
+
+ISSUE: webDAV can allow writing to repo.
+ISSUE: is read-only access useful/necessary? Developers need push, others likely only need 
+       officially supported releases. Make a file share for release material instead?
+
+
+################################################################################
+Try sometime: Git Server (simple/temporary)
+
+Using git daemon.
+    sudo apt-get install apache2 apache2-utils
+    a2enmode cgi alias env
+    git config alias.serve "daemon --verbose --export-all --base-path=.git --reuseaddr --strict-paths .git/"
+
+    Note the alias is important, as git executes it from the base directory (e.g. where the
+    .git is located), as long as you are in the directory or a subdirectory of your repo.
+
+    Use your new git serve alias like so:
+    Run 'git serve'. It will report "Ready to rumble". Git is bad-A.
+    Find out your IP address. Say it's 192.168.1.123.
+    Say "hey Jane, I'm not ready/able to push these commits up to origin, but you can
+    fetch my commits into your clone by running git fetch git://192.168.1.123/"
+    Press ctrl+c when you don't want to serve that repo any longer.
+
+    You could also tell Jane to git clone git://192.168.1.123/ local-repo-name if
+    she does not yet have a clone of the repository. Or, use git pull
+    git://192.168.1.123/ branchname to do a fetch and merge at once, useful if you
+    are working together on a feature branch.
+
+Refer to: http://git-scm.com/book/ch4-6.html
+Refer to: man git daemon
+
+
+################################################################################
+Try sometime: Git Server (web interface/gui)
+
+FOSS options: RhodeCode, Gitblit, cgit, 
+
+
+################################################################################

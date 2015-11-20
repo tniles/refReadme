@@ -1,0 +1,136 @@
+
+Ok, so... bugzilla is pretty cool. By the time you get apache and bugzilla automagically
+installed, I think it's rather impressive how well it works. The online tutorial for setup
+on linux is not complete, but the missing stuff is either in the quick start guide or is
+actually part of the apache setup. There's also the fact that if you use gmail, you need to
+work out some authentication details (e.g. ssl settings for apache, bugzilla, gmail).
+
+My first install used sqlite. However, when I tried a suggestion from an online forum to test
+the email capability via requesting a password reset, well... the email settings apparently 
+weren't ready for primetime, which meant the email failed, and then subsequent attempts to 
+log in seemed to be stuck in a password reset loop (i.e. I couldn't log in). :-( Thus, I'm
+now also unsure whether I have a saved database anywhere. 
+
+On to ACLs so I can poke around in the bugzilla install (/var/www).
+
+Permissions for Bugzilla Users:
+
+    To have read access for a particular product/group, check that box under Admin>User Groups
+    To have write access, check the 'editbugs' box under Admin>User Groups.
+
+    Note: write access only applies for bugs which that user can view.
+    Note: with read access, a user can comment on a bug, but cannot do anything else.
+
+DATABASES AND LOCATIONS
+
+Database location for bugzilla:
+    ${BUGZILLAROOT}/data/db/<dbName> 
+    where dbName is user defined in ${BUGZILLAROOT}/localconfig
+
+sqlite
+    Data is stored in a single file, no security (although there is an add-on for encryption),
+    but is easy to migrate because of this.
+
+mysql
+    Password protected database with more features than sqlite, but not to ANSI standards if
+    that matters for your application.
+
+postgresql
+    A separate project but can be thought of as the "next-gen" of mysql as it implements the 
+    full ANSI standards.
+
+Edit default field values:
+    As admin, click on "Administration" (header or footer menu link)
+    Select "Parameters"
+    Select "Bug Fields"
+    Change "defaultXYZ" to the desired setting
+
+To migrate between machines:
+    NOTE: bugzilla.org has a good step-by-step guide for this. Here is a quick reference:
+    *) Activate bugzilla's shutdownhtml parameter
+    *) Back up all critical data first (e.g. your data/db/bugs database)
+    *) Install the same version of bugzilla on the second machine as is on the first
+    *) Copy (scp -rp) 'data' dir and 'localconfig' file
+    *) make any necessary changes to localconfig and files such as data/params.json
+    *) ./checksetup.pl
+    *) Deactivate shutdownhtml
+
+BASIC INSTALL:
+    NOTE: The best thing to do is follow the directions on the bugzilla website, but here's a
+    basic recipe:
+    *) configure apache
+    *) download bugzilla (source or tarball), e.g.
+        cp bugzilla-xx.x.x.tar to /var/www/html/bugzilla
+        or
+        git clone --branch release-5.0-stable https://git.mozilla.org/bugzilla/bugzilla
+            Optional: omit the --branch switch, then pull and track the remote branch.
+            Required: Either way, now switch to a custom branch based on the stable branch
+            (safer in case you decide to do some dev later on). E.g. 'myRolloutV50'
+    *) ./checksetup.pl --check-modules      # tells which modules are missing; from here
+                                              you can install system wide (cpan -i mod::name) 
+                                              or locally (install-module.pl)
+    *) cd bugzilla ; ./install-module.pl --all
+    *) ./checksetup.pl                          # to generate localconfig file
+    *) update localconfig as necessary:
+        $create_htaccess = 0;
+        $webservergroup = 'www-data';       # apache for centos
+        $use_suexec = 0;
+        $db_driver = 'sqlite';
+        $db_host = 'localhost';
+        $db_name = 'bugzilladb';
+        $db_user = 'bugzillauser';
+        $db_pass = 'mypassword';
+    *) ./checksetup.pl
+    *) access bugzilla via the web and configure the Parameters page (accessible via the 
+        Adminstrator footer). Or, if you've already configured this and have the files backed
+        up, then restore them accordingly, e.g.:
+        cp TBD /var/www/html/FOO/
+    *) If not already configured, point apache to bugzilla (edit /etc/apache2/apache2.conf):
+        # mod_cgi for bugzilla, note no trailing slashes!
+        <Directory /var/www/html/bugzilla>
+            AddHandler cgi-script .cgi
+            Options +ExecCGI +FollowSymlinks
+            DirectoryIndex index.cgi index.html
+            AllowOverride Limit FileInfo Indexes Options
+        </Directory>
+    *) Reload apache: `service apache2 restart`
+
+
+Installs/prep on CentOs:
+    yum install httpd mod_ssl
+    # configure firewall to serve websites
+    /sbin/chkconfig httpd on                    # tell centos to start httpd on every boot
+    yum install perl* mod_perl mod_perl-devel
+    Git Clone bugzilla and go from there.
+
+
+Various issues encountered on CentOs:
+
+    Bugzilla had an issue where it could not access the web (port 80) to find its update.xml
+    file. Changing the SELinux http_network_can_connect boolean to 'on' fixed this.
+
+    Bugzilla had an issue where it could not access gmail smtp via port 465. After
+    placing selinux in permissive mode and still seeing this error, some web searching
+    suggested missing perl modules or a misconfiguration of them. I had installed some of
+    perl/perl modules via yum and some via cpan (both manually/explicitly and by virtue of
+    using bugzilla's built-in module installer). Better to not mix and match the two. After
+    trying to wipe perl/cpan from my system, I then reinstalled via yum perl*. The way to
+    install perl modules via yum is "yum install 'perl(IO::Socket::SSL)'", where 
+    IO::Socket::SSL is the perl module name. Ultimately, the package name is likely something
+    akin to perl-IO-Socket-SSL ("-" sub'd for "::"). 
+        At the end of the day I used bugzilla's built-in installer (install-module.pl --all).
+
+
+Bugzilla email client:
+    mail_delivery_method: SMTP
+    mailfrom: defectTracker@gmail.com
+    smtpserver: smtp.gmail.com:465
+    smtp_username: defectTracker@gmail.com
+    smtp_password: accountPasswd
+    smtp_ssl: On
+
+    Test the email by adding your email to the 'global watchers' list. Then change a bug (e.g.
+    priority from low to high and back, or something like that).
+
+Try Sometime:
+    report -T bugzilla bugTemplateFile     # cli ticket reporter

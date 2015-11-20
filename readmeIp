@@ -1,0 +1,622 @@
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+A variety of commands or processes as it relates to network and ip.
+NOTE: windoze commands at end of document.
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+Flush DNS cache:
+    On Ubuntu 11.04 and below, you would need to install (or have previously installed) a dns
+    caching program. In which case, you would use that program's flushing mechanism, e.g.:
+        sudo apt-get install nscd
+        sudo /etc/init.d/nscd restart 
+    On Ubuntu 11.04 and above, dnsmasq is standard, although it does not cache sometimes. To
+    see whether it is caching, use 'ps ax | grep dnsmasq' and look for 'cache-size'. View the
+    syslog (/var/log/syslog) to see messages re: dnsmasq. If caching is enabled, use
+        sudo pkill -HUP dnsmasq
+    to clear its cache.
+
+Edit your ip addresses (Debian):
+    NOTE: did not really get this to work in Ubuntu via the command line. :-(
+    Instead, entering all essential information the gui tool was what finally worked.
+    Requires: IP, Mask, Gateway, and DNS addresses.
+
+    It may be that I had not added the DNS addresses into the file (manual method). 
+
+    {{{The closest I got to a working manual method was from a 'sudo-juice' tutorial:
+        * Edit /etc/NetworkManager/NetworkManager.conf and
+            - comment out dns=dnsmasq
+            - change managed=false to managed=true
+        * Find the network gateway: ip route show
+        * Confirm your Subnet/Mask: ifconfig eth0 | grep Mask
+        * Confirm/select your DNS addresses
+        * Edit /etc/network/interfaces and add the following:
+            auto eth0
+            iface eth0 inet static
+            address 192.168.1.17
+            netmask 255.255.255.0
+            gateway 192.168.1.1
+            dns-nameservers 192.168.1.10 192.168.1.11
+        * Restart the network services
+            sudo service network-manager restart
+            sudo service networking restart
+            sudo service resolvconf restart
+            NOTE: may also require 'sudo ifconfig eth0 down && sudo ifconfig eth0 up'
+            Reboot if this doesn't work.
+        * Confirm settings via ifconfig
+    }}}
+
+Edit your ip addresses (RHEL):
+    NOTE: this is redhat linux specific!
+
+    Option 1 (tui/gui):
+        system-config-network
+
+    Option 2 (cli):
+        edit /etc/sysconfig/network-scripts/ifcfg-ethX      # where X = 0,1,2,3...
+        change bootproto to 'static' (from 'dhcp')
+        edit the netmask
+        add the ipaddr
+        add the gateway
+
+        e.g. 
+            BOOTPROTO=none                  # 'static' deprecated (earlier versions of centos)
+            IPADDR=192.168.1.15
+            NETMASK=255.255.255.0           # CIDR notation for our /24 network
+            GATEWAY=192.168.1.1             # found via 'route' output
+
+    Now 'service network restart' and 'ifconfig' to verify.
+    {{{ Example ifcfg-eth* file (dhcp vs static):
+        DHCP:                                                   
+            DEVICE=eth2
+            TYPE=Ethernet
+            UUID=001e341f-3512-4390-ba4d-ecd7a77457e1
+            ONBOOT=yes
+            NM_CONTROLLED=yes
+            BOOTPROTO=dhcp
+            HWADDR=00:0E:0C:A9:A8:8C
+            DEFROUTE=yes
+            PEERDNS=yes
+            PEERROUTES=yes
+            IPV4_FAILURE_FATAL=yes
+            IPV6INIT=no
+            NAME="System eth2"
+        STATIC:
+            DEVICE=eth2
+            TYPE=Ethernet
+            UUID=001e341f-3512-4390-ba4d-ecd7a77457e1
+            ONBOOT=yes
+            NM_CONTROLLED=yes
+            BOOTPROTO=none
+            HWADDR=00:0e:0c:a9:a8:8c
+            DEFROUTE=yes
+            PEERROUTES=yes
+            IPV4_FAILURE_FATAL=yes
+            IPV6INIT=no
+            NAME="System eth2"
+            IPADDR=192.168.1.15
+            NETMASK=255.255.255.0
+            GATEWAY=192.168.1.1
+            USERCTL=no
+    }}}
+
+See what network manager sees (important for debian/ubuntu):
+    nm-tool         # tags: NetworkManager, network-manager, network manager
+
+Save Network configuration:
+    Export using:
+        system-config-network-cmd -e > ~/networkCfg
+
+Ip addresses:
+    An address of 10.10.15.10/16 means "ip address"/"subnet mask". That is, the local network,
+    as recognized by your machine, spans the subnet resulting from the ANDing of "10.10.15.10"
+    and "255.255.0.0". The result is 10.10.0.0, which means everything from 10.10.0.0 up to
+    10.10.255.255 is on your network.
+
+    The subnet mask is expressed as a number of bits, starting from left to right in the ipv4
+    8-bit value fields.
+
+nmap:
+
+    Network Mapper. Sounds like a good tool to look into further sometime.
+
+Cygwin Ping:
+
+    Works only with admin priveleges. Easy way out: uninstall cygwin ping
+    so that windows ping is used instead (as of 2009 or so).
+
+Wireless cards?
+    iwconfig
+    If you run this command, and all output says "no wireless extensions", then... gues what?
+    No wireless.
+
+**********
+ WARNING:  Commands ifconfig, ip, and route will take effect immediately. This is very useful
+********** for establishing temporary network configurations for test, etc. They are not by
+********** default persistent across reboots.
+
+Find ip addr:
+    ip addr show
+    ip route show
+    # NOTE: ifconfig on its way to being obsoleted.
+    ifconfig
+    ifconfig eth0
+
+Connect if to ip:
+    sudo ifconfig eth0 10.0.0.100 netmask 255.255.255.0
+
+route:
+    Proceed with caution!! Can list and manipulate routing tables. E.g.
+        ... forget it, just read the examples in the man page and be afraid, very afraid.
+    Configure the default gateway to match network requirements:
+        sudo route add default gw 10.0.0.1 eth0
+    Display routing table with DNS (can verify default gw changes):
+        route
+    Display routing table without DNS (faster, and helpful if DNS seems to have vanished):
+        route -n    # note: see man page
+    Reroute name server (temporary DNS):
+        Edit /etc/resolv.conf by adding a new line 'nameserver 8.8.8.8'. Can have mulitple.
+
+ip:
+    Proceed with caution!! Can list and manipulate routing tables, devices, and tunnels. E.g. 
+    Lists connections with their configuration info.
+        ip link show
+    Purge IP config from an interface
+        ip addr flush eth0      # note: does not modify /etc/resolv.conf
+
+Establish DHCP or static for server:
+    Dynamic--Add to /etc/network/interfaces:
+        auto eth0
+        iface eth0 inet dhcp
+    Static--Add to /etc/network/interfaces:
+        auto eth0
+        iface eth0 inet static
+        address 10.0.0.100
+        netmask 255.255.255.0
+        gateway 10.0.0.1
+    Enable/Disable the interface (calls dhclient):
+        sudo ifup eth0
+        sudo ifdown eth0
+
+Name Resolution (DNS):
+    Maps IP addresses to hostnames. Administered primarily through the resolvconf framework.
+    One popular option is to set your router's nameserver to OpenDNS (opendns.com), e.g.
+        208.67.222.222  # primary dns
+        208.67.220.220  # secondary dns
+
+DNS lookup utility dig (domain information groper):
+    dig localhost
+    dig google.com
+    dig pandora.com +trace
+
+    Is the DNS cache active?
+    dig amazon.com | grep -i sec        # perform twice; if 0 sec, cache was used
+
+Add name servers (permanent, DNS), Edit /etc/network/interfaces, e.g.:
+    iface eth0 inet static
+        address 192.168.3.3
+        netmask 255.255.255.0
+        gateway 192.168.3.1
+        dns-search example.com
+        dns-nameservers 192.168.3.45 192.168.8.10
+    To include subdomains, append to the search field:
+        dns-search example.com sales.example.com dev.example.com
+        If you try to ping a host "server1", this will cause the system to query DNS for its 
+        Fully Qualified Domain Name (FQDN) in the following order: 1) server1.example.com,
+        2) server1.sales.example.com, 3) server1.dev.example.com.
+
+/etc/hosts file:
+    Entries in /etc/hosts have precedence over DNS. That is, ip addr aliases in this file will
+    always be used instead of going out to the web for redirection via DNS. This is basic
+    blocking/filtering of undesirable websites. E.g.
+        127.0.0.1   localhost
+        127.0.1.1   ubuntu-server
+        10.0.0.11   server1 server1.example.com vpn
+        10.0.0.12   server2 server2.example.com mail
+        10.0.0.13   server3 server3.example.com www
+        10.0.0.14   server4 server4.example.com file
+    ### ipAddr      name    fqdn                alias
+
+Who is this ip really? (also lists nameservers/DNS associated with/used by this ip)
+    whois 127.0.0.1
+
+Find ip addresses of nameservers/DNS:
+    nslookup google.com ns3.google.com
+
+Ping:
+    ping -c 10 nas
+    Send packets and listen for echos to see if a machine (or network connection) is on the
+    network. E.g., I have the ip addr for a machine... can I connect to it?
+
+Examine sockets:
+    ss -altn        # for example, is ssh listening on port 22?
+
+Show ip connections (routing) to a particular address:
+    traceroute localhost
+
+List all recognized networking hardware:
+    sudo lshw -class network
+
+Set or Show your hostname and associated ip:
+    hostname
+    hostname -I
+
+Lookup other hostnames/IPs:
+    host ipAddr
+    nbtscan ipAddr
+    nmblookup -A ipAddr
+
+Local ip addresses:
+    127.0.0.1 thru 127.255.255.254      # loopback addresses for local machine
+    0.0.0.0     # INADDR_ANY, or "unspecified address". Official name: "source address for 
+                this host on this network" (RFC 5735, Sect. III). Synonyms: 0.0.0.0/0 ; :0/0 ;
+                default gateway (in routing tables). Cannot be used as the source address in 
+                any packet unless while trying to acquire a new ip addr (classic example: 
+                dhcp).
+    NOTE: the difference between 0.0.0.0 and 127.0.0.1 is huge! The loopback is only
+    accessible from the local machine, whereas the unspecified address means the service is
+    listening to all the other configured network interfaces is connected. That is, if apache
+    (a service/server) is allowed to listen to 0.0.0.0, and the webserver machine has two ip
+    addresses, e.g. x.x.x.x and x.x.x.y, apache will be reachable by either of those ip 
+    addresses (note: in accordance with existing firewall rules, e.g. ip addresses and ports).
+
+Browse the web:
+    w3m <url>
+
+Is ssh running?
+    ps aux | grep ssh
+    pgrep -l ssh
+    sudo netstat -natp | grep ssh
+
+Start sshd:
+    sudo /etc/init.d/ssh start
+
+Is ssh working?
+    ssh -vv user@server
+
+scp:
+    On linux, this is relatively easy. To use scp, verify the following:
+        1. ssh is installed
+        2. sshd is running (ssh daemon)
+    scp user@host:pathToFile /some/local/file
+    scp /some/local/file user@host:destinationPath
+
+scp speedup:
+    use switch "-c blowfish" for the faster blowfish cipher
+    use switch "-C" for compression (only helpful on very slow connections)
+
+scp with ssh keys:
+    To enable, from your workstation run the command
+    ssh-copy-id <user>@<host>
+    where host is the remote pc, and this should do everything for you.
+
+ssh config (sshd's internal firewall), if you want to prevent everything except localhost:
+    ssdh: 127.0.0.1     # place in /etc/hosts.allow
+    ssdh: ALL           # place in /etc/hosts.deny
+
+gnupg:
+    Permissions should always be as follows:
+    chown -R $(whoami):$(whoami) ~/.gnupg
+    chmod 700 ~/.gnupg
+    cd ~/.gnupg
+    chmod 600 *
+
+Network intrusion detection:
+    E.g. using SnortIDS and ACID (Analysis Console for Intrusion Detection, a web frontend).
+    Requires the LAMP suite, which makes use of MySql (providing a backend for SnortIDS).
+        LAMP: Linux-Apache-MySql-Php.
+
+View Assigned Ports:
+    less /etc/services
+    e.g. all http traffic, whether tcp (orderly, guaranteed delivery) or udp (bulk, speedy,
+    no-guarantees delivery), comes and goes through port 80. Therefore something.com is really
+    "something.com:80". Likewise, https is on port 443.
+
+Firewall tools:
+    fwbuilder (gui, similiar to commercial utility 'Checkpoint Firewall-1')
+    Shorewall (text based)
+    ufw       (cli, uncomplicated firewall)
+    iptables  (cli, native linux toolset to interact with the kernel's netfilter subsystem)
+On Centos, try: 
+    yum install system-config-firewall-tui ; system-config-firewarll-tui
+    fwbuilder
+    webmin
+    shorewall
+
+Firewall status check:
+    sudo ufw status
+    iptables -vnL
+
+Ports vs ip addresses:
+    Some background first (source: stackoverflow):
+        An ip address specifies a network connection/interface (i.e. ethernet jack on your pc 
+        or your wifi connection). A port number specifies the process to which to route
+        messages arriving on a given network interface. Hence you can use the same port
+        number with different ip addresses, as they specify the port on which to listen on 
+        that given interface. Note, though that you can even reuse a port number with the same
+        ip address if you use the SO_REUSEADDR option when invoking the bind function.
+    So... ports and ip addrs are basically orthagonal. The ip addr is a result of your pc's
+    physical network connection, whereas ports are a (partly by global convention) specific 
+    portal to a particular service/recipient on the pc. 
+        Another example: Packets are routed along to a specific ip address, but sometimes with
+        an intended port to go through once they arrive.
+
+Basic Firewall using ufw:
+    sudo ufw enable; sudo ufw logging on; sudo ufw allow ssh/tcp; sudo ufw status
+    sudo ufw enable     # load changes
+    This enables ufw, activated logging, and blocking everything except tcp on port 22.
+    NOTE: ufw does not filter the loopback interface, but iptables can.
+
+iptables:
+    rpm -q iptables             # check which package/version is installed
+    lsmod | grep ip_tables      # is it currently running?
+    iptables -L                 # show active rules organized by chain
+    iptables -vnL               # more info (verbose, and ip addresses instead of hostnames)
+
+    service iptables status     # another way to show status
+
+    To enable iptables for the first time: system-config-securitylevel
+
+iptables: Stateful Packet Inspection Firewall (allow all outgoing, block unwanted incoming):
+    First, some terminology: 
+        three chains -- Input, Output, Forward. Forward is in the case of a
+                        proxy or route. I/O is from the perspective of the server (i.e.
+                        input=incoming, output=outgoing).
+        state states -- New, Established, Related. New is traffic from brand spanking new
+                        connections, Established/Related pertain to traffic from presently
+                        established connections.
+
+    On Centos the rules will be stored in /etc/sysconfig/iptables
+
+    RULE ENTRY (order dependent!):
+    # accept so we don't get locked out from ssh
+        iptables -P INPUT ACCEPT
+    # flush current rules/table
+        iptables -F
+    # append to Input chain Iface lo jump to target Accept
+        iptables -A INPUT -i lo -j ACCEPT
+    # append to Input chain, load module state, specify packets with states Established OR
+    # Related to jump to target Accept
+        iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+    # append to Input chain that traffic via Protocol Tcp to DestPort 22 to jump to target 
+    # Accept
+        iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+    # set default Policy on Input chain to Drop traffic
+        iptables -P INPUT DROP
+    # set default Policy on Forward chain to Drop traffic
+        iptables -P FORWARD DROP
+    # set default Policy on Output chain to Allow traffic
+        iptables -P OUTPUT ACCEPT
+    # save rules (persist across reboot, i.e. updates /etc/sysconfig/iptables)
+        /sbin/service iptables save
+        /sbin/service iptables reload       # occassionally necessary??? idk...
+        {{{ On Debian/Ubuntu:
+            sudo apt-get install iptables-persistent
+            sudo /etc/init.d/iptables-persistent save
+            sudo /etc/init.d/iptables-persistent reload
+        }}}
+    {{{'iptables -L -v' should now give the following output:
+        Chain INPUT (policy DROP 0 packets, 0 bytes)
+         pkts bytes target     prot opt in     out     source               destination
+            0     0 ACCEPT     all  --  lo     any     anywhere             anywhere
+            0     0 ACCEPT     all  --  any    any     anywhere             anywhere            state RELATED,ESTABLISHED
+            0     0 ACCEPT     tcp  --  any    any     anywhere             anywhere            tcp dpt:ssh
+        Chain FORWARD (policy DROP 0 packets, 0 bytes)
+         pkts bytes target     prot opt in     out     source               destination
+        Chain OUTPUT (policy ACCEPT 0 packets, 0 bytes)
+         pkts bytes target     prot opt in     out     source               destination
+    }}}
+
+    CAUTION! If you allow all packets from your external internet interface (as opposed to
+    internal), you will have effectively disabled your firewall! (e.g. "eth0")
+
+    If you are running a webserver, you will want to eventually add:
+        iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+        iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+
+    Block pings with reject message:
+        iptables -A INPUT -p icmp --icmp-type echo-request -j REJECT
+    Block pings without message:
+        iptables -A INPUT -p icmp --icmp-type echo-request -j DROP
+        iptables -A OUTPUT -p icmp --icmp-type echo-reply -j DROP
+    Accept pings:
+        iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+        iptables -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
+    Disallow outgoing pings originating from your host:
+        iptables -A OUTPUT -p icmp --icmp-type echo-request -j DROP
+
+####If you are running a service which needs to be able to upgrade itself, you will need to
+####allow DNS queries and the particular URL:
+    NOTE: not sure this is really necessary when -P OUTPUT is ACCEPT
+        #iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+        #iptables -A OUTPUT -p tcp -d bugzilla.org --dport 80 -j ACCEPT
+        #iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+    Allow a particular ip:
+        #iptables -A INPUT -s 192.168.0.4 -j ACCEPT
+        #iptables -A INPUT -s 192.168.0.0/24 -j ACCEPT
+        #iptables -A INPUT -s 192.168.0.0/255.255.255.0 
+        #iptables -A INPUT -s 192.168.0.4 -m mac --mac-source 00:50:8D:FD:E6:32 -j ACCEPT
+
+    Allow remote login via ssh from a specified address range (intended to include your home
+    dhcp address range):
+        # append to Input chain traffic via Protocol Tcp from Source address 0-24 on
+        # 192.168.0 to DestPort 22 to jump to target Accept
+        #iptables -A INPUT -p tcp -s 192.168.0.0/24 --dport 22 -j ACCEPT
+
+    More HOWTOs available at netfiler.org/documentation
+
+    RULES TO TRY SOMETIME (after researching):
+    #iptables -A INPUT -p tcp --tcp-flags ALL NONE -j DROP          # avoid DDOS
+    #iptables -A INPUT -p tcp ! --syn -m state --state NEW -j DROP  # avoid syn-flood
+    #iptables -A INPUT -p tcp --tcp-flags ALL ALL -j DROP           # avoid XMAS packets
+
+
+netstat tool:
+    netstat -natp | less            # see all established connections
+    netstat -natp | grep LISTEN     # see all listening/open ports
+    
+    netstat -ap --unix      # see all unix sockets
+        NOTE: sockets are interprocess comms subject to fs permissions; ports are IP comms
+        subject to packet filtering only. Sockets are faster and intended for same-host
+        operations. Ports can be used in similar fashion via the loopback device (localhost).
+
+NAS/SMB:
+
+    Use 'findsmb' to ls all viewable servers.
+    Use 'smbtree -N' to ls all viewable shares.
+    Use 'smbclient -L HOSTNAME' for more verbose info on available shares.
+    Use 'smbstatus' to list connected smb shares.
+    Use 'nmblookup -S "*"' to list name and ip of connected smb devices in your domain.
+
+    See if you can mount it:
+        mount -t cifs nasIp:/shareDir /myMountPoint
+    Or:
+        mount -t cifs nasIp:/shareDir /myMountPoint -o credentials=/pathTo/creds/file
+
+    A verbose example of the above:
+        mount -t cifs "//nas/website1Bak$" /media/website1Bak -o credentials=/home/tniles/.smbcreds,uid=$USER,gid=$USER,file_mode=0664,dir_mode=0750,iocharset=utf8
+
+    EDITING FSTAB:
+    First make a backup of your fstab.
+    To test out your fstab entry, use 'mount -av'.
+    For mounting at login, add lines to /etc/fstab like so (at one point or another, these are
+    the lines I have had on my workstation fstab):
+
+    //nas/Pngs /media/Pngs cifs guest,iocharset=utf8 0 0
+    //nas/LoadExe /media/LoadExe cifs guest,iocharset=utf8 0 0
+    //nas/Models /media/Models cifs guest,uid=tniles,gid=tniles,file_mode=0664,dir_mode=0755,iocharset=utf8 0 0
+    //nas/website1Bak$ /media/website1Bak cifs credentials=/home/tniles/.smbcreds,uid=tniles,gid=tniles,file_mode=0664,dir_mode=0750,iocharset=utf8 0 0
+
+    ALTERNATIVE (needs more experimenting): use the gvfs-mount application.
+    Easy option: use the application gigolo (it mounts what its told to).
+
+    NOTES:
+    * uid and gid are parameters local to the client system
+    * Any perms specified with mount will only affect client access, not server perms,
+    if the server does not support CIFS Unix Extensions. However, if you use a tool such as 
+    deja-dup or duplicity, the nature of their opaque data storage means you get preserved
+    permissions for free. YAY!
+    * In the case of the Buffalo TerraServer 3400D, if the share is hidden, accessing it 
+    requires appending a "$" to the name, e.g. "//nas/website1Bak$"
+    * fstab is meant for statically mounted drives. That is, anything mounted here is visible 
+    to all users logged in according to the permissions specified for the mount. Therefore,
+    for backups or sensitive or user-specific data, it is better to have a script which mounts
+    the appropriate filesystems based on the $USER variable (also not available to fstab,
+    which is run as root).
+        On Ubuntu, not sure which, if either, is more secure:
+        Option #1) add a script to ~/.config/autostart which calls a script using $USER 
+        located where root can own, access, and run it. Then, edit your sudoers file so the 
+        script can be run by users. This means adding a line such as:
+            tniles ALL = NOPASSWD: /home/tniles/bin/mountNas.sh
+        I couldn't get this to work with a reasonable amount of effort.
+        Option #2) add a root-owned script to /etc/xdg/autostart which calls a script using
+        $USER located in the user's home bin. I couldn't get this to work with decent effort.
+        ISSUE: security hole if script is modified to open root prompt (e.g. sudo -i).
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+To change computer name (hostname):
+
+1) edit /etc/hostname
+2) edit /etc/hosts
+3) sudo service hostname restart 
+
+However, sometimes other programs require a reboot to recognize this change.
+I am not certain why this occurs.
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+CUPS (Common Unix Printing System):
+
+To access cups, open your web browser and goto
+	localhost:631
+Under the Administration tab you can search and add network printers.
+
+Not to be confused with CIFS (Common Internet File System), which CUPS leverages.
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+VPN:
+
+    Always ask first: what protocol does the VPN server use? 
+    Reason: there are many protocols, e.g. Cisco AnyConnect, PPTP, IPSec, OpenVpn. You need a
+    client which understands the protocol being served. 
+
+    IPSec:
+    sudo apt-get install network-manager-vpnc network-manager-vpnc-gnome
+    You can then either configure via the network manager gui or by editing a vpnc conf file. 
+    Start with:
+        cp /etc/vpnc/default.conf /etc/vpnc/myVpn.conf
+        vim /etc/vpnc/myVpn.conf
+
+        IPSec gateway 171.200.114.89                            # external ip
+        IPSec ID my-vpn                                         # group name
+        IPSec secret providedKeyForSecurity                     # preSharedKey (group passwd)
+        IKE Authmode psk                                        # specify PreSharedKey
+        Xauth username myVpn
+        Xauth password myVpnSecurePasswd
+
+        Connect: sudo vpnc myVpn.conf
+        Disconnect: sudo vpnc-disconnect
+            NOTE: if multiple VPNs are active, use 'killall vpnc', as the above command only
+            works on the most recent connection (or use top or htop).
+
+        NOTE: verify permissions before and after. E.g. should be owned and rw only by
+              root:root because it contains auth data.
+        chown root:root *.conf    # configuration files to all be owned by root
+        chmod go-rw *.conf        # no one else (group, others) can read/write
+
+    OpenVpn:
+    sudo apt-get install network-manager-openvpn openvpn
+    sudo restart network-manager
+    Open Network Manager (GUI from launcher panel) > Configure VPN
+    Create a new OpenVPN connection (use ip, username, password, group, and cert if necessary)
+    Under 'Advanced', enable 'Use LZO data compression'
+    Start the VPN connection by selecting it from the Network Manager list of VPN connections
+
+    Disconnect when finished! :-)
+
+    NOTE: pptp is no longer considered secure; as of Ubuntu 10.04, VPN is installed by default
+
+    Alternatives:
+        lKEv2 - (secure when using open source implementations) especially for mobile devices
+            (e.g. this is a blackberry user's only option).
+
+    Security notes on browser use via VPN (WebRTC bug):
+        WebRTC is a ‘feature’ of latest generation browsers (just Firefox and Chrome, not any
+        other browser) designed to allow voice calling, video chat, and P2P file sharing
+        without the need for additional plugins. Unfortunately, it also allows websites to
+        execute JavaScript code within visitors’ browsers that can determine their ‘real’ IP,
+        even when using VPN!
+
+        To see whether your browser is vulnerable to the WebRTC ‘bug’, visit ipleak.net (with
+        your VPN enabled). WebRTC can be easily disabled in Firefox by changing the
+        media.peerconnection.enabled setting to false (see here for full instructions), but
+        cannot be reliably disabled in Chrome (or Chromium). Note that many websites state
+        that WebRTC can be disabled in Chrome using the ScriptSafe extension, but we have
+        heard reports of this not always working (although it does seem to work for us…)
+
+        We therefore strongly recommend that all OpenVPN users switch to using Firefox with
+        WebRTC disabled.
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+Try sometime:
+
+Temporarily share static files over HTTP:
+    python -m SimpleHTTPServer
+
+mtr (combo of traceroute and ping)
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+Windows of commands or processes as it relates to network and ip.
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+use "/?" parameter to get the help on "dos" commands, like:
+nbtstat /?
+ipconfig /?
+route /?
+tracert /?
+netsh /?
+arp /? 

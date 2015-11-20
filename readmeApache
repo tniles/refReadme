@@ -1,0 +1,518 @@
+APACHE -- AN OPEN SOURCE WEB SERVER
+
+Ubuntu: man apache2
+Centos: man httpd
+    Note on Apache Versions (httpd -v):
+        Centos 7.1:     Apache/2.4.6 (CentOS)
+        Centos 6.7:     Apache/2.2.15 (Unix)
+        Ubuntu 12.04:   Apache/2.2.22 (Ubuntu)
+
+        Note: one of the more potentially frustrating changes between 2.2 and 2.4 is the
+        deprecation of mod_authz_host which means using the new 'Require' directive for access
+        control is necessary.
+
+.htaccess files:
+    Don't use these (performance hit). These are mostly override sorts of things.
+
+Restart apache (typically necessary after changing web content or operating parameters):
+    sudo service apache2 restart
+    Centos7: systemctl restart httpd
+    Centos6: service httpd restart      (Note: `httpd -k restart` may be equivalent)
+
+    NOTE: 'reload' doesn't seem exactly equivalent, so use restart for a heavy duty reboot.
+
+Error log/logs location:
+    Ubuntu: /var/log/apache2
+    Centos: /var/log/httpd
+
+Apache's User and Group:
+    www-data:www-data       # on ubuntu
+    apache:apache           # on redhat/centos
+    Note: web content should be owned by root, and group accessible for Apache.
+    See Security Notes, below.
+
+    For colloborative purposes, sometime try using the SuExec module/environment.
+
+DNS/etc/hosts: 
+    Use an alias in /etc/hosts to redirect to your named virtual host. E.g.
+    {{{ 127.0.0.1   localhost
+        127.0.1.1   otherNameForMyPC
+
+        127.0.0.1   www.myTestWebsite.com   myTestWebsite   myTestWebsite.com
+        127.0.0.1   www.myTestWebsite2.com  myTestWebsite2  myTestWebsite2.com
+
+        # The following lines are desirable for IPv6 capable hosts
+        # ::1     ip6-localhost ip6-loopback
+        # fe00::0 ip6-localnet
+        # ff00::0 ip6-mcastprefix
+        # ff02::1 ip6-allnodes
+        # ff02::2 ip6-allrouters
+    }}}
+
+    NOTE: Creating virtual host configurations on your Apache server does not magically cause
+    DNS entries to be created for those host names. You must have the names in DNS, resolving
+    to your IP address, or nobody else will be able to see your web site. You can put entries
+    in your hosts file for local testing, but that will work only from the machine with those
+    hosts entries.
+
+    This method is preferable to doing rolling your own DNS server, as they are prime
+    candidates for DDoS attacks and the like.
+
+Test that vhost configs are okay:
+    sudo apache2ctl configtest      # general configs and directives, files locatable
+    sudo apache2ctl -S              # virtual host configs
+{{{     SAMPLE OUTPUT:
+        VirtualHost configuration:
+        wildcard NameVirtualHosts and _default_ servers:
+        *:80                   is a NameVirtualHost
+         default server website1.com (/etc/apache2/sites-enabled/website1.com:1)
+         port 80 namevhost website1.com (/etc/apache2/sites-enabled/website1.com:1)
+         port 80 namevhost website2.com (/etc/apache2/sites-enabled/website1.com:45)
+        Syntax OK
+}}}
+
+    Centos 6&7: apachectl           # s/apachectl/httpd/ may also work
+
+    NOTE: the ':1' and ':45' are the line numbers in the site config file cited.
+
+Debug apache redirects:
+    curl --verbose --head --location 12.34.56.789
+
+Apache redirects:
+    Adding the following Redirect directive
+        Redirect permanent / https://www.marlin.com
+    redirects all traffic (/) to the website given (the http:// is required).
+
+    NOTE: Browsers store permanent redirects permanently (duh). In firefox, you will have to
+    clear the cache and possibly refresh (<F5>). Other browsers may be helped by going into
+    private browsing mode, accessing the url (kicks the cache), and then return to non-private
+    browsing.
+
+    To avoid this hassle (for test purposes), use RedirectTemp (302) instead of 
+    RedirectPermanent (301).
+
+Editing html or web content of your site:
+    Changes should be observable in real-time if apache2 is configured correctly.
+    For example, on a running site, try editing simple html page (e.g. index.html). Hit
+    refresh in your browser.
+
+Modules: which modules are available on my system?
+    ls /usr/lib/apache2/modules
+
+Modules: which modules are installed (but not enabled) on my system?
+    a2enmod
+
+Modules: which modules are enabled (can be disabled) on my system?
+    a2dismod
+
+    NOTE: if you see anything odd with the above two commands, it may be that your apache 
+    install has been corrupted. Use apt-get to reinstall apache2.2-common (common files to the
+    install). 
+    Provided you have not edited common files for your deployment, this action should not wipe
+    out any configuration details you may have.
+    To verify: 'apt-file list apache2.2-common' to see which files will be affected.
+
+    Background: the a2enmod/a2dismod (much like a2ensite/a2dissite) tools simply remove/create
+    symlinks to the modules installed so apache can recognize/load them. If things don't add 
+    up, something destructive occurred.
+
+Options for continued access:
+    chmod g+s serverDir
+    This will make you the owner of the content && also anything created in the future.
+
+Enabling Websites:
+    To do this, you must add a conf file under apache's available sites list/dir, e.g.
+        touch /etc/apache2/sites-available/myWeb.conf
+    Add the appropriate content, e.g.
+        ServerName localhost
+        <Directory /var/www/html/bugzilla>
+          AddHandler cgi-script .cgi
+          Options +ExecCGI
+          DirectoryIndex index.cgi index.html
+          AllowOverride Limit FileInfo Indexes Options
+        </Directory>
+    Depending on whether the .conf extension is important to you, optionally add a symlink:
+        ln -s bugzilla.conf bugzilla
+    Then enable the site and appropriate actions/abilities:
+        a2ensite bugzilla
+        a2enmod cgi headers expires
+    Restart Apache:
+        sudo service apache2 restart
+
+    ***CentOs twist:
+    Implement a debian style approach: 
+        First, add the appropriate include in /etc/httpd/conf/httpd.conf::
+            Include sites-enabled/*
+
+        NOTE: if there are no websites enabled, httpd will fail to start/restart (error out on
+        missing website confs; esp. if you have vhosts. Try httpd -t in this scenario). This
+        will only happen if you have ZERO websites configured/enabled (including the default
+        centos/apache welcome page).
+
+        Second, optionally comment out the global document root (as this is better off in your
+        website conf files):
+            #DocumentRoot "/var/www/html"
+
+        mkdir /etc/httpd/sites-available /etc/httpd/sites-enabled
+
+        Create a2en/dissite scripts in /usr/local/bin
+    Suggested scripts:
+        {{{a2ensite
+        #!/bin/bash
+        if ! test -d /etc/httpd/sites-available ; then 
+            mkdir /etc/httpd/sites-available
+        fi
+        if ! test -d /etc/httpd/sites-enabled ; then
+            mkdir /etc/httpd/sites-enabled
+        fi
+
+        avail=/etc/httpd/sites-available/"$1"
+        enabled=/etc/httpd/sites-enabled
+        site=`ls /etc/httpd/sites-available`
+
+        if [ "$#" != "1" ] ; then
+            echo "Usage: a2ensite virtual_site"
+            echo -e "\nAvailable virtual hosts:\n$site"
+            exit 0
+        else
+            if test -e $avail ; then
+                ln -s $avail $enabled
+            else
+                echo -e "Vhost $avail does not exist! Please create one!\n$site"
+                exit 0
+            fi
+
+            if test -e $enabled/"$1" ; then
+                echo -e "Apache server restart required\n\tsystemctl restart httpd"
+            else
+                echo  -e "Vhost $avail does not exist!\nPlease see available vhosts:\n$site"
+            fi
+        fi
+        exit 0
+        }}}
+        {{{a2dissite
+        #!/bin/bash
+        if ! test -d /etc/httpd/sites-available ; then 
+            mkdir /etc/httpd/sites-available
+        fi
+        if ! test -d /etc/httpd/sites-enabled ; then
+            mkdir /etc/httpd/sites-enabled
+        fi
+
+        avail=/etc/httpd/sites-enabled/"$1"
+        enabled=/etc/httpd/sites-enabled
+        site=`ls /etc/httpd/sites-enabled`
+
+        if [ "$#" != "1" ]; then
+            echo "Usage: a2dissite virtual_site"
+            echo -e "\nAvailable virtual hosts: \n$site"
+            exit 0
+        else
+            if test -e $avail; then
+                rm $avail
+            else
+                #echo -e "$avail virtual host does not exist! Exiting!"
+                exit 0
+            fi
+
+            if test -e $enabled/"$1" ; then
+                echo "Error! Could not remove $avail virtual host!"
+            else
+                echo -e "Apache server restart required\n\tsystemctl restart httpd"
+            fi
+        fi
+        exit 0
+        }}}
+
+Telling apache which IPs to use/listen to:
+    In your global apache conf file (httpd.conf or apache.conf), use the 'Listen' directive.
+    The default of 'Listen 80' will tell apache to listen to all ips on your server coming to
+    port 80. However, if you have multiple ips available and want to dedicate one, e.g. so you
+    can dedicate another to other services, such as ssh/ftp, then specify the address in the
+    listen directive, e.g. 'Listen 192.168.1.150:80'.
+
+Name Based Virtual Hosts (nbvh or vhosts):
+    Wowee! This one took a bit of effort, and it's really not all that bad. Part of this is
+    the naming convention of different files. What you see in the following example should
+    help clarify some of those requirements, even if they are not rules but best practices.
+    Simple example here:
+        * Install and configure Apache
+        * sudo mkdir /var/www/html/website1.com
+        * create/edit the index.html there:
+            sudo cp /var/www/index.html /var/www/html/website1.com/
+        * verify permissions match: 660 and root:www-data
+        * create the new vhosts file:
+            sudo cd /etc/apache2/sites-available ; sudo cp default website1
+        * Edit Contents of website1 to match:
+        (short form)
+            ServerName website1.com
+            ServerAdmin webmaster@localhost
+            ServerAlias www.website1.com
+            DocumentRoot /var/www/html/website1.com
+        {{{(long form)
+            <VirtualHost *:80>
+                ServerName website1.com
+                ServerAdmin webmaster@localhost
+                ServerAlias www.website1.com
+
+                DocumentRoot /var/www/html/website1.com
+                <Directory />
+                    Options FollowSymLinks
+                    AllowOverride None
+                </Directory>
+                <Directory /var/www>
+                    Options Indexes FollowSymLinks MultiViews
+                    AllowOverride None
+                    Order allow,deny
+                    allow from all
+                </Directory>
+
+                ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
+                <Directory "/usr/lib/cgi-bin">
+                    AllowOverride None
+                    Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+                    Order allow,deny
+                    Allow from all
+                </Directory>
+
+                ErrorLog ${APACHE_LOG_DIR}/error.log
+
+                # Possible values include: debug, info, notice, warn, error, crit,
+                # alert, emerg.
+                LogLevel warn
+
+                CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+                Alias /doc/ "/usr/share/doc/"
+                <Directory "/usr/share/doc/">
+                    Options Indexes MultiViews FollowSymLinks
+                    AllowOverride None
+                    Order deny,allow
+                    Deny from all
+                    Allow from 127.0.0.0/255.0.0.0 ::1/128
+                </Directory>
+
+            </VirtualHost>
+
+        }}}
+        * sudo a2ensite website1
+        * sudo service apache2 restart      # NOTE: 'apache2 reload' does not work here
+        * Edit the hosts file (add line):
+            127.0.0.1   www.website1.com   website1
+        * Browse to www.website1.com
+
+    To add a second vhost, simply tack on the necesary few lines for the second site, e.g.:
+        <VirtualHost *:80>
+            ServerName website2.com
+            ServerAdmin webmaster@localhost
+            ServerAlias www.website2.com
+            DocumentRoot /var/www/html/website2.com
+        </VirtualHost>
+
+    NOTE: '_default_' is an alias for '*'. However, there is some indication in the 
+    /etc/apache2/ports.conf file that if you use one label in one file, you should/must use
+    the same label in the other file(s).
+
+    NOTE: making ssl (443) vhosts required adding "NameVirtualHost *:443" in the
+    /etc/apache2/ports.conf file. Prior to that, having multiple vhosts on *:443 caused apache
+    to issue warnings of sites overlapping on port 443, with precedence being given to the
+    first site entry.
+
+Read/Write/Execute and perms for colloboration:
+    See SECURITY NOTES, below. There are a lot of possibilities and potential outcomes here.
+    Set proper ownership recursively:
+        chown -R root:www-data /var/www
+        CentOs: root:apache
+    Use 'find' to appropriately recurse and distinguish between directories and files:
+        find ~/projects/foo -type f -exec chmod 640 {} +
+        find ~/projects/foo -type d -exec chmod 755 {} +
+    Since it is now owned by root, set up ACLs so developers can develop:
+        sudo setfacl -Rm d:u:tniles:rwX,u:tniles:rwX /var/www
+            NOTE: this is about the only key thing to run, as it will allow you the user to
+            meddle with the files for test purposes. Use `setfacl -b` to remove these. This is
+            really only necessary for testing on a machine without root login. That is, on a
+            desktop machine, as opposed to a server where you should be logged in as root to
+            begin with.
+    The BASICS:
+    {{{ 1) Follow the Principle of Least Privilege. 
+        2) Allowing root to own the web content plays nicely with other things owned by root,
+           such as apache modules and perl/cpan sw, etc. This typically corresponds with 
+           owner perms like 'rwx'. Furthermore, root as owner is a good choice because then it
+           adds an additional layer of protection from other users, especially including 
+           processes.
+           Furthermore, it would seem that some programs (e.g. bugzilla) expect to operate
+           as the root user.
+        3) Apache needs to be able to read your web content in order to serve it, which is why
+           it is typical for the content under /var/www to have group ownership of www-data.
+           As a word of caution, this group should not have write priveleges, and certainly 
+           should not have execute priveleges. This makes it more difficult for the server to 
+           become compromised.
+    }}}
+    ADVANCED:
+        See SECURITY NOTES, below. Set up Access Control Lists (ACLs) for your developers and
+        apache (www-data/apache). ACLs allow fine-tuning of permissions.
+
+
+\<#############################
+        SECURITY NOTES
+#############################\>
+As a general rule, follow the Principle of Least Privilege at all times:
+    Think of apache as a middle man or third party... and it's autonomous. You want to be very
+    careful of how much access you give to it, including your web content and filesystem!
+
+{{{
+Runtime considerations:
+    Use a dedicated virtual machine per webserver.
+
+www-data:www-data
+    A few notes: apache should not run as root; the apache server user should not be part of
+    the group root; the package SuExec is useful to allow apache to run as the virtual owner
+    of the web files (e.g. as one would do on a shared webhost); 644 for files and 755 for
+    directories are safe-ish default permissions for files to be served to the web.
+
+    A.K.A. 'umask 022'.
+
+    Do NOT change the ownership of anything unless you want PHP/others to be able to edit its 
+    contents!
+
+    Do NOT add yourself to the www-data group! This implies giving the group www-data write 
+    access which means apache can write to your serverDir which means your website has write 
+    access to your code. This is insecure!
+
+{{{Permissions while colloborating:
+    I'm thinking the easiest way to share between developers is to have a separate group the 
+    developers share, and when the web content must be edited, chown the group from apache 
+    (www-data) to the dev group (e.g. www-pub). Then, when the edits are complete, hand the
+    ownership back over to apache and allow the serving to continue.
+
+    The reason why: some people advise against letting apache have write permissions except 
+    where absolutely necessary (e.g. upload folders, forms, etc.), but at the same time it is
+    a pain to have to edit files which you neither own nor have access to via group 
+    membership. Furthermore: suppose you were the member of that group (e.g. apache's group,
+    www-data), the only way this would work is to allow group write access, which is something
+    you don't want apache to have (since it's a purported security hole).
+
+    At the end of the day, this sounds as though it is a perfect use case for ACLs, which is
+    a set-it-and-forget-it approach (clearly the best). This allows tight control of basic
+    perms, without changing user or group ownership, but also giving developers (unique human
+    users) the access they need. Time to learn ACLs!
+
+    NOTE: ACLs may not be necessary for a typical server configuration as (supposedly) the
+    only login will be root.
+
+ACLs:
+    Accessed. Controlled. Lists. See 'man setfacl' and 'man getfacl'.
+    Example based on Users:
+        setfacl -Rm d:u:userA:rwX,u:userA:rwX /var/www
+        setfacl -Rm d:u:userB:rwX,u:userB:rwX /var/www
+    Example based on a shared group:
+        setfacl -Rm d:g:groupA:rwX,g:groupA:rwX /var/www
+    Example to restrict apache to read only:
+        setfacl -Rm d:u:www-data:rX,u:www-data:rX /var/www
+    Example to remove all acl perms:
+        setfacl -b /var/www
+
+    I wrote this down because I knew it would inevitably happen again, and it did! (In process
+    of updating to bugzilla 5.0). The solution was to remove ACLs for the db dir tree, and
+    re-run the bugzilla checksetup.pl (which fixes permissions), and then reapply my ACLs.
+
+And here's what I initially used, but it had some issues (made the db read only for www-data):
+    {{{ sudo setfacl -Rm d:u:tniles:rwX,u:tniles:rwX /var/www
+        sudo setfacl -Rm d:u:www-data:rX,u:www-data:rX /var/www/bugzilla
+As with any security scheme, it will likely have some side affects, such as certain scripts or
+databases not having the write access they require to be served. Manually repair these perms.
+        sudo find bugzilla -type f -name \*.pl -exec chmod 750 {} +
+        sudo find bugzilla -type f -name \*.pm -exec chmod 650 {} +
+        sudo find bugzilla -type f -name \*.cgi -exec chmod 650 {} +
+    }}}
+}}}
+}}}
+
+## END OF SECURITY NOTES ##
+
+
+SELinux:
+    CentOs (v4+) makes use of SELinux. This got in the way of some basic server testing as I
+    was bringing up CentOs6.7 with httpd. Use 'ls -Z' to see file context (SELinux)
+    permissions and use 'cp -c' to preserve permissions when they are known-good SELinux
+    permissions.
+
+        yum  install selinux-policy-doc.noarch setools setools-console
+        yum  install policycoreutils policycoreutils-gui policycoreutils-python
+
+    sestatus        # -v
+    getsebool       # -a for all, -P to preserve across reboots
+    setsebool       # -P to preserve across reboots
+
+    setenforce 0    # place in permissive mode
+    setenforce 1    # place in enforcing mode
+
+    *** semanage: swiss army knife of selinux ***
+    'semanage' available via 'yum install policycoreutils-python'
+    'seinfo' available via 'yum install setools-console'
+        What ports are allowed for which contexts?
+            semanage port -l | grepi http
+
+    Logs in /var/log/audit/audit.log
+
+    *** audit2 Commands ***
+    Use output from logs with 'audit2why' and 'audit2allow' to troubleshoot contexts.
+
+    sealert -a audit.log    # part of the setroubleshoot-server package, similar to audit2why
+
+    Nuclear option: reset all default contexts:
+        # restorecon -rv /var/www/html
+
+    Make sure these are enabled for Centos6/httpd/Bugzilla:
+    setsebool -P allow_ypbind on
+    setsebool -P httpd_can_network_connect on
+    setsebool -P httpd_enable_cgi on
+    setsebool -P httpd_can_sendmail on
+    setsebool -P httpd_can_network_connect_db on
+    setsebool -P httpd_verify_dns on
+    setsebool -P httpd_builtin_scripting  on
+    setsebool -P httpd_dbus_avahi on
+    setsebool -P git_cgi_enable_homedirs on     # if using gitweb with home dir repos
+
+    Silent denials?
+        Be sure to check /var/log/audit and /var/log/messages and dmesg.
+        Sometimes the issue may not be SELinux after all!
+        If the audit trail is cold, check if potentially relevant "dontaudit" rules are 
+        active: 'sesearch --dontaudit -s httpd_t | grepi someKeyword'
+        You can also build a policy without dontaudit rules:
+            semodule -DB
+        Reactivate dontaudit rules:
+            semodule -B
+
+    Try sometime: Fresh wipe and do-over for selinux:
+        # setenforce 0
+        # yum erase selinux\*
+        # mv /etc/selinux/targeted /etc/selinux/targeted.backup
+        # rm -rf /etc/selinux
+        # yum install selinux-policy selinux-policy-targeted
+        # touch /.autorelabel
+        # reboot
+
+
+Migrating a server (rc files, web content, scripts, etc.):
+    NOTE: some of this reflects quirks in migrating debian based to rhel based. At the end of
+    the day, these are the files and such you will need to fully move web server and config
+    files to immediately replicate a running server to another similar machine/OS.
+
+    Recommend: first tar everything, as this will better preserve permissions (not sure why,
+    but I couldn't get `scp -p` to preserve ownership, just modes).
+
+    NOTE: if traversing apache versions, it is probably easier to copy the native httpd.conf
+    and proceed to manually edit/add the lines required (versions of this file vary 
+    wildly--for example, moving a centos7 httpd.conf into place for a centos6 httpd.conf
+    results in errors, including "permission denied" in spite of identical owners & modes).
+
+    scp -rp /etc/httpd/conf/httpd.conf
+    scp -rp /etc/httpd/sites-available/
+    scp -rp /usr/local/bin/
+    scp -rp /var/www/html/     # Note: depending on your content, maybe even /var/www/
+
+    sd /etc/httpd/sites-available/ && a2ensite *
+    # restart apache
+
+

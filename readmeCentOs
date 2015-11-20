@@ -1,0 +1,513 @@
+CentOs is for servers!
+
+    Note: CentOs 7 is based on RHEL 7.1
+
+
+Place an iso on a usb drive:
+    dd if=CentOS-6.5-x86_64-bin-DVD1.iso of=/dev/sdb
+
+Find last reboot:
+    last reboot | head -1
+    -or-
+    who -b
+
+$$$$$$$$$$ YUM $$$$$$$$$$
+
+NOTE: typical package names inclue the release version and the arch type (e.g. x86_64)
+
+Upgrade the system via yum:
+    yum -y update
+
+Enable autocomplete for packagenames:
+    yum install bash-completion
+    log out and re-login
+    NOTE: requires EPEL (Extra Packages for Enterprise Linux) repo: yum install epel-release
+
+Installing packages:
+    yum install packageName
+
+    If you can't find it with yum, then try rpm (redhat package manager). If that doesn't 
+    work, build from source.
+
+Uninstalling packages:
+    yum remove packageName
+
+Install package by name (arch agnostic):
+    yum install "packageName"
+
+Yum group/groups/grouped packages:
+    yum groupinstall "group"    # Install group
+    yum grouplist               # Find available groups
+    yum grouplist hidden ids    # ...
+    yum groupinfo "group"       # Info on group
+    yum groupremove "group"     # Uninstall groups/grouped packages
+
+    CAUTION! groupremove could blow away dependencies (more than you bargained for)
+
+Clear package caches:
+    yum clean all
+
+Find packages for command cmd:
+    yum provides cmd
+
+Find available packages:
+    yum list available 'pkgName*'
+
+Install a local package with automatic dependency checks:
+    yum --nogpgcheck localinstall packageName
+
+Find string in repos:
+    yum search string
+
+Find all packages available from a specific repo:
+    yum --disablerepo "*" --enablerepo "repoName" list available
+
+    Note: does not show packages already installed from this repo
+    Note: this is not a disable/enable for repos; it is local to the command 'list available'
+
+Enable/Disable a repo:
+    yum-config-manager --disable repoName
+        e.g.  yum-config-manager --disable epel
+    yum-config-manager --enable repoName
+        e.g.  yum-config-manager --enable epel
+
+Looking for a pure 64-bit system?
+    yum remove \*.i\?86
+    Add 'exclude = *.i?86' to /etc/yum.conf
+    yum reinstall \*        # to recover 64 bit packages accidentally blown away
+
+List repos:
+    yum repolist
+    yum repolist enabled        # same as 'yum repolist'
+    yum repolist disabled
+    yum repolist all            # show enabled and disabled
+
+Add a repo:
+    yum install -y "link"
+        # Note: there may be an official pkg or you may need a link
+        # yum install -y epel-release
+        # yum install -y "http://www.elrepo.org/elrepo-release-6-6.el6.elrepo.noarch.rpm"
+    Note: elrepo has 4 channels: elrepo, elrepo-extras, elrepo-testing, elrepo-kernel
+        Add its public key: rpm --import https://www.elrepo.org/RPM-GPG-KEY-elrepo.org
+    Enable a channel:
+        yum-config-manager --enable chanName
+    Enable a channel only during installation:
+        yum --enablerepo=chanName install pkgName
+
+
+$$$$$$$$$$ END YUM $$$$$$$$$$
+
+
+$$$$$$$$$$ RPM $$$$$$$$$$
+
+Find installed packages:
+    rpm -qa pkgName\*       # i.e. is this package installed? (pkgName)
+
+Find which package has cmd:
+    rpm -q --whatprovides $(which cmd)
+
+Find docs for a package:
+    rpm -qd pkgName
+    rpm -qdf /path/to/file  # if you know the file, and not the package name
+
+Find installed packages by install order and date:
+    rpm -qa --last > ~/rpmsByInstallDate
+
+Find installed package origin:
+    If the package shows up in 'rpm -qi pkgName', then you can try (not gauranteed):
+        rpm -qa release="*rf"       # where 'rf' is the identifier typical of rpmforge
+        rpm -qa packager="Johnny*"  # to see installed packages built by JohnnyVatsvog
+
+Find packages not from CentOs (third-party repos):
+    rpm -qa --qf '%{NAME} %{VENDOR}\n' | grep -v CentOs
+
+Find installed GPG keys:
+    rpm -q gpg-pubkey --qf '%{name}-%{version}-%{release} --> %{summary}\n'
+
+Goobered file permissions? Restore default perms:
+    rpm --setperms pkgName
+
+$$$$$$$$$$ END RPM $$$$$$$$$$
+
+
+Apache/Apache2:
+    yum install "Web Server"
+
+    On redhat distros apache is called httpd. E.g.
+        httpd -v
+
+    Web content is under:           /var/www
+    Apache config data is under:    /etc/httpd
+
+    user:  apache
+    group: apache
+
+
+Install KDE:
+    Install a minimal centos
+    yum groupinstall "X Window System"
+    yum groupinstall "Fonts"
+    yum install gdm
+    CentOs 7:
+        yum install kde-workspace
+        unlink /etc/systemd/system/default.target
+        ln -sf /lib/systemd/system/graphical.target /etc/systemd/system/default.target
+        reboot (or: systemctl isolate graphical.target)
+    CentOs 6:
+        yum install kdebase-workspace
+        vim /etc/inittab
+        Change "3" to "5" for initdefault
+        reboot
+
+    # also try: yum groupinstall "X Window System" "KDE Desktop"
+
+Install graphical utilities:
+
+    yum groupinstall "Graphical Internet"
+
+
+$$$$$$ Backups using duplicity $$$$$$ 
+
+Using yum, enable the epel repo and install:
+
+    # yum install duplicity samba cifs-utils
+
+    Note: the manpage for duplicity is very good. Use it as a reference.
+    For example, avoid backing up /proc as this would result in undefined behavior.
+
+Verify access to the backup location (e.g. by mounting and unmounting it)
+
+Enable duplicity script (create and chmod +x)
+    {{{ #!/bin/bash
+        #
+        # DESCRIPTION:
+        #   duplicity based script to perform a full system backup, excluding unnecessary dirs
+        #
+        # LIST OF DIRECTORIES NOT TO ARCHIVE TO AVOID CRASHES AND LOOPS:
+        #   /proc ; /mnt ; /media ; /tmp
+        #
+        # NOTE ON LOG FILES: there are multiple log files to help establish time duration of
+        # operations. Since seconds are involved, I would not anticipate collisions simply
+        # due to the size of files this script/duplicity is dealing with. However, this may 
+        # be a bug which requires attention at a later date.
+        #   E.g., if all commands are echoed, this will almost always be the same file
+        #   meaning the email will have multiple concatenations of the same file.
+        #
+        
+        # set source location
+        sDir="/"
+        # set target location
+        tDir="file:///media/marlinBak"
+        # set log location and name
+        logPath="/root/dupLogs"
+        mkdir -pv $logPath
+        
+        # encryption passphrase
+        #{{{
+        export PASSPHRASE=passwordGoesHere
+        #}}}
+        
+        # duplicity options
+        dLogLvl="-vWarning"
+        dOpts="--full-if-older-than 1M --exclude /proc --exclude /media --exclude /mnt
+        --exclude /tmp --exclude /sys --exclude /boot --exclude /dev --exclude /lib --exclude
+        /lib64 --exclude /home/lost+found"
+        # NOTE on why I used a bunch of exclude switches rather than a few include switches:
+        # I would rather not have to think about including new content, esp. like new users
+        # home dirs, which should result in less modifications to a script (this one) I don't
+        # want to have to repeatedly test and verify.
+        #dOpts="$dOpts --dry-run"    # dry-run for exercise, no action taken
+        
+        # remove obsoleted archives
+        logNameRemove="dup.`date +"%Y%m%d.%H.%M.%S"`.log"
+        fh="$logPath/$logNameRemove"
+        echo "####### DUP CLEAN #######" >> $fh
+        #{{{
+        echo "duplicity remove-older-than 1Y $dLogLvl --log-file $fh $tDir >> $fh" >> $fh
+        #}}}
+        duplicity remove-older-than 1Y $dLogLvl --log-file $fh $tDir >> $fh
+        
+        # perform full and incremental backups
+        logNameBak="dup.`date +"%Y%m%d.%H.%M.%S"`.log"
+        fh="$logPath/$logNameBak"
+        echo "####### DUP BAK #######" >> $fh
+        #{{{
+        echo "duplicity $dOpts $dLogLvl --log-file $fh $sDir $tDir >> $fh" >> $fh
+        #}}}
+        duplicity $dOpts $dLogLvl --log-file $fh $sDir $tDir >> $fh
+        
+        # verify the backup
+        logNameVerify="dup.`date +"%Y%m%d.%H.%M.%S"`.log"
+        fh="$logPath/$logNameVerify"
+        echo "####### DUP VERIFY #######" >> $fh
+        #{{{
+        echo "duplicity verify $dOpts $dLogLvl --log-file $fh $tDir $sDir >> $fh" >> $fh
+        #}}}
+        duplicity verify $dOpts $dLogLvl --log-file $fh $tDir $sDir >> $fh
+        
+        # document finish time
+        logNameFinished="dup.`date +"%Y%m%d.%H.%M.%S"`.log"
+        fh="$logPath/$logNameFinished"
+        echo "####### DUP FINISH #######" >> $fh
+        echo "Backup Completed as $logNameFinished" >> $fh
+        
+        # email output
+        cat -s "$logPath/$logNameRemove" "$logPath/$logNameBak" "$logPath/$logNameVerify" \
+        "$logPath/$logNameFinished" | mail -s "Nightly Backup Results" \
+        tniles@server.com
+
+        # exit cleanly
+        exit 0
+    }}}
+
+Create cron job for nightly backups (2AM PST, 9AM UTC0):
+    0 09 * * * /bin/nice -n 10 /root/bin/backup.sh >> /root/cronLogs/cronRoot.log
+
+
+$$$$$$$$$$$$$$$$$$$ Testing duplicity $$$$$$$$$$$$$$$$$$$
+
+Recommend: use a virtual machine to restore files recently updated on the real server.
+
+Mount the backup directory, install duplicity (requires epel), et cetera, et cetera.
+
+Debug info for restore is usually not necessary, but the default is 4 and so you need to
+specify at least 8 or 9 to get more output. The default is enough to tell you whether the
+operation succeeded. To enable, add switch "-v8".
+
+Key note on restore:
+The KEY to restore commands is to know where their root is. That is, if you backed up
+everything from "/", then... congratulations! You've made it that much easier on yourself. :-)
+This means that every file or path for the backup files can be specified with respect to "/".
+
+See the files you have to choose from (for restore operations):
+    # NOTE: this also helps verify you won't overwrite system files currently in use should
+    # they exist as known backed up files
+    # duplicity list-current-files file:///media/mountedBakDrive
+
+Now issue restore commands, such as:
+    # full system, 4 days ago
+    # duplicity restore -t 4D file:///media/mountedBakDrive /
+
+    # only the src dir for user, 4 days ago... NOTE the missing "/" since this is its
+    # reference point!
+    # duplicity -t 4D --file-to-restore home/user/src file:///media/mountedBakDrive /home/user/src
+
+Note: duplicity will not overwrite files by default. So, if you require a full system
+restore, you will need to use the "--force" switch.
+    # duplicity --force file:///media/mountedBakDrive /
+
+Note: --include/--exclude options are ignored in restore mode.
+
+
+$$$$$$$$$ logrotate, logrotate.conf, logrotate.d $$$$$$$$$ 
+
+Log rotation with *nix built in logrotate. Archival tool for plentiful log files.
+
+Easiest thing to do is to copy and modify an existing conf from /etc/logrotate.d, e.g. if you
+like how apaches logs rotate, cp that one to 'dupBak' or something:
+
+{{{ Sample httpd:
+    /var/log/httpd/*log {
+        missingok
+        notifempty
+        sharedscripts
+        delaycompress
+        postrotate
+            /sbin/service httpd reload > /dev/null 2>/dev/null || true
+        endscript
+    }
+}}}
+
+{{{ Sample dupBak:
+    /root/cronLogs/*log /root/dupLogs/*log {
+        weekly
+        missingok
+        notifempty
+        compress
+        delaycompress
+        noolddir
+        rotate 10
+    }
+}}}
+
+
+SeLinux:
+    # semanage fcontext -l | less                               # list available types
+    # semanage fcontext -a -t httpd_log_t "/root/dupLogs(/.*)?" # hack: overload httpd log t
+    # restorecon -R -v /root/dupLogs/                           # kick selinux
+
+    # Note: absolute paths required.
+
+
+$$$$$$ Server Recommendations Specific to CentOs 7 $$$$$$ 
+
+This is meant as a quick reference for installs/maintenance. Note that it is taken from a
+variety of sources: cpanel install guide, centos/rhel install guide, author's experience.
+
+RHEL: https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Installation_Guide/s2-diskpartrecommend-x86.html
+
+Swap space should be determined by the amount of RAM installed [and if hibernation allowed]:
+    2GB or less :   2x min                      [3x min]
+    2GB to 8GB  :   Same amount as RAM          [2x]
+    8GB to 64GB :   Half the amount of RAM      [1.5x]
+    64GB or more:   At least 4GB                [hibernation not recommended]
+
+Partitioning:
+    min 40GB for /      # in most cases should be much more, especially the fewer partitions.
+                          Use ext4.
+    500MB for /boot     # kernels, etc. Enough to not have to clean out too often (each kernel
+                          is roughly 10MB, so default of 250MB is likely plenty).
+                          Use ext3 (see note on ext4, below).
+                          Needs to be a primary partition.
+    /etc/mail           # in particular is typically the section needing to be its own 
+                          partition (for high email volume servers). 
+    /var/www            # holds web content. See below note on /var and /usr
+    /home               # for user accounts, even if future
+    /tmp
+    unalloc LVM         # any remaining space is best left as a lvm for future needs
+ 
+    NOTE: consider ext4 a reasonable default fs format (except for /tmp and swap, of course).
+          Due to GRUB limitations, /boot should be ext3 if / is ext4.
+
+    NOTE: keep /usr and /var on the same partition as / (rhel says so)... has to do with the
+          boot process. Note that /var/www can have its own partition and work just fine. The
+          /var dir needs at least 3GB (double for developer?) because it temporarily holds
+          updates and packages in /var/cache/yum. The /usr dir holds the majority of the
+          rhel system. Min 4GB for standard, min 8GB for developer.
+
+    NOTE: consider encryption for sensitive data (e.g. /home), as this is really the only way
+          to protect against attacks beginning with physical access to the drive.
+
+    RAID: RAID1 offers redundancy at the cost of halving total capacity.
+
+    Final comments on partitioning:
+        Subdirs are fair game for having their own partition. Basically, anything you don't 
+        want to lose (which is not OS related) is you do a fresh install. A good example would
+        be a mySql db, and you could make /var/lib/mysql its own partition.
+
+Inodes:
+    Applications like cpanel recommend a larger-than-the-default number of inodes (especially 
+    if there is only one partition. This is due to webserver files being large in quantity and
+    small in size. Recommend: min 1,000,000 inodes, plus 50,000 inodes per cpanel account 
+    hosted.
+
+Forgotten root password? 
+    Interrupt the boot at the GRUB stage and boot to runlevel 1, AKA single user mode.
+    Interrupt GRUB by typing a character such as "space" then append to the kernel line by
+    typing "a", backspacing through "rhgb quiet" and appending " 1<enter>". This will give you
+    a root shell and not a login prompt. From there you can use the "passwd" command to set a
+    new root password.
+
+    Other user passwords can be reset, and other administrative tasks can be performed as 
+    well. Exiting the single user root shell will boot to the multi-user mode defined in 
+    /etc/inittab. 
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+ADVENTURES WITH CENTOS!!!
+
+A brief log (important quirks, or basics, only) of how I installed CentOs on a Dell PowerEdge
+1800 Server with a PERC 4/dc raid card with 5 146GB SCSI drives.
+
+Centos 7 was recently released, with a LTS EOL of 2024 (compared to Centos 6 at 2020).
+
+First... RHEL7 dropped PERC support, so I had to backtrack to CentOs 6.
+
+PERC did not play nicely and would not allow me to configure RAID 10. I went with RAID1,
+giving me 292GB across four drives (keeping fifth as a spare, no hotswap).
+    Update: after further review, this really is RAID 10. The key is to notice the "SPAN=YES"
+    in the configuration menu. As a result, two drives striped (as raid 0, although no text
+    will say as much) and will span and present as a single logical RAID 1 drive. That is, you
+    should have two arrays of two drives each, spanning each other as a RAID 1 (which the PERC
+    configures as RAID 10).
+
+My partitioning scheme was as follows:
+    sda
+        sda1       500MB    /boot       ext3        # force to be a primary partition
+        sda2         4GB    swap        swap
+        sda3    275203MB    vg_marlin   LVM
+    LVM (vg_marlin)
+        lv1      81920MB    /           ext4
+        lv2     102400MB    /var/www    ext4
+        lv3      45440MB    /tmp        ext4
+        lv4      45440MB    /home       ext4
+    
+    Install boot loader on /dev/sda (MBR).
+    Boot Loader OS on /dev/sda1 (label: CentOs 6)
+
+NOTE: during install, in the network config step you must select Auto-Connect if you want the
+system configured to connect to the internet on boot (can be done manually, later, too).
+
+Group Packages to Install:
+    "Web Server" "System administration tools" "System Management" "Remote Desktop Clients" "Perl Support" "Networking Tools" "Hardware monitoring utilities" "Debugging Tools" "Base" "Backup Client" "Fonts"
+
+Other Packages to Install:
+    python-argparse     # kept getting mail from argparse crashes
+
+Update (especially after a fresh install):
+    yum update
+
+Enable daily updates:
+    /sbin/chkconfig --level 345 yum on && /sbin/service yum start
+
+    NOTE: There is no separate yum service that runs on your system. The command given above
+        enables the control script /etc/rc.d/init.d/yum. This control script activates the 
+        script /etc/cron.daily/yum.cron, which causes the cron service to perform the system 
+        update automatically at 4am each day. 
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+System time, Time zones, date, etc.
+
+A few items to make sure things are copacetic.
+
+    A list of time zone confs are held in the /usr/share/zoneinfo dir.
+    To help select your timezone, use the interactive tzselect.
+
+    For servers, keep the time zone in UTC0 as this avoids daylight savings time and 
+    associated errors. You also may want to tie this to an authoritative time server (list of
+    ntp servers available at ntp.org).
+
+    Add line to .bashrc:
+        TZ='UTC0'; export TZ
+
+    Point /etc/localtime to the proper conf:
+        mv /etc/localtime /etc/localtime.bak
+        ln -s /usr/share/zoneinfo/UTC /etc/localtime
+
+    Authoritative time server sync (network time protocol, or ntp):
+        yum install ntp
+        service ntpd stop
+        ntpdate time.apple.com
+        service ntpd start
+        chkconfig ntpd on
+
+    Sync hardware clock to system time:
+        hwclock --hctosys
+
+Use the command 'date' to confirm settings, and try again after logging out and back in.
+
+
+$$$$$$$$$$$$$$$$$$$$
+Try Sometime:
+
+    Kickstart installation: automated installs using a rc file with preformatted answers to
+                            the usual questions. Can standardize installs, place rc file under
+                            source control.
+
+    # yum install vsftpd
+        Or the ProFTPd from RPMforge
+
+    Mailservers: sendmail or postfix
+    
+    System clones/backups with /sbin/dump
+        Note: only works with ext2/ext3 fs
+        # /sbin/dump -0uan -f - / | gzip -2 | ssh -c blowfish user@backupserver.example.com \
+        #   dd of=/backup/server-full-backup-`date '+%d-%B-%Y'`.dump.gz
+        This will do a file system dump of / (make sure you don't need to dump any other
+        mounts!), compress it with gzip and ssh it to a remote server
+        (backupserver.example.com), storing it in /backup/.
+        If you later need to browse the backup you use restore: 
+        # restore -i
+
+

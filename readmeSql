@@ -1,0 +1,30 @@
+SQL Relational Database
+
+############################
+
+SQLite
+
+The database will be stored in $BUGZILLA_HOME/data/db/$db_name, where $db_name is the database
+name defined in localconfig.
+
+
+############################
+
+Convert from SQLite to MySQL
+
+Q: Anyone know a quick easy way to migrate a SQLite3 database to MySQL?
+
+
+A: Here is a list of converters:
+
+    http://www.sqlite.org/cvstrac/wiki?p=ConverterTools
+
+An alternative method that would work nicely but is rarely mentioned is: use a ORM class that abstracts the specific database differences away for you. e.g. you get these in PHP (RedBean), Python (Django's ORM layer, Storm, SqlAlchemy), Ruby on Rails ( ActiveRecord), Cocoa (CoreData)
+
+i.e. you could do this:
+
+    Load data from source database using the ORM class.
+    Store data in memory or serialize to disk.
+    Store data into destination database using the ORM class.
+
+    

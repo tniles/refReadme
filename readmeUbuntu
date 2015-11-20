@@ -1,0 +1,584 @@
+README file for oft-forgotten tricks. 
+
+
+$$$$$$$$$$$$$$$$$$$ xfce via rdp no tab completion $$$$$$$$$$$$$$$$
+
+edit
+~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml
+
+find the line
+
+<property name="&lt;Super&gt;Tab" type="string" value="switch_window_key"/>
+
+and change it to
+
+<property name="&lt;Super&gt;Tab" type="empty"/>
+
+reboot or whatever and then tab will work properly!
+
+
+$$$$$$$$$$$$$$$$$$$ refresh user perms,etc w/o logout $$$$$$$$$$$$$$$$
+
+exec su -l $USER
+
+
+
+$$$$$$$$$$$$$$$$$$$ mouse focus $$$$$$$$$$$$$$$$
+
+For ubuntu 12.04, choose 'mouse' or 'sloppy':
+    gconftool-2 --type string --set /apps/metacity/general/focus_mode mouse
+    gconftool-2 --type boolean --set /apps/metacity/general/auto-raise true
+    gconftool-2 --type string --set /apps/metacity/general/auto-raise 600
+
+
+############# custom live cd for ubuntu #############
+
+Suggest using UCK (Ubuntu Customization Kit). This allows you the chance to install extra 
+packages.
+
+Acquire the base .iso for the ubuntu install. Run uck and select the languages, options, etc.
+Answer affirmatively in regards to customizing the build. Continue with the build. When given 
+the option, use the command line/shell and you will be able to enter apt-get commands to 
+install and update the base .iso file. Anything you do in this terminal (at least in regards 
+to the packages) will affect the generated .iso file. Once finished, the final .iso will be 
+dumped somewhere such as:
+    ~/tmp/remaster-new-files/livecd.iso
+
+Note: you can also add files to the liveCD. The most convenient way to do this is to open a 
+separate terminal and move the files where you want them to be within the unpacked FS, the 
+location being:
+    ~/tmp/remaster-root/
+
+Once finished, you can emulate this with qemu or virtualbox (or some other emulator), such as:
+    qemu-system-x86_64 -cdrom <pathToIso> -boot d -m 256
+
+NOTE: there is no difference between a "cd iso" and a "dvd iso". There is only iso, and its 
+size will determine what media is required. Just make sure the boot flag is set (should be 
+taken care of by uck). Once the .iso is burned to disk, verify the presence of multiple 
+files/directories, e.g. not just a single .iso file (meaning you made a data cd), to know it 
+succeeded.
+
+
+############# various cpu info commands #############
+
+NOTE: 'x86_64' means it is a amd64 architecture (could be an intel chip, tho)
+
+    uname -a
+    arch (same as uname -m)
+    less /proc/cpuinfo
+    cat /proc/cpuinfo | grep processor | wc -l # will reflect hyperthreading (same as 'nproc')
+    cat /proc/cpuinfo | grep "core id"         # will show real cores
+    lscpu
+    hardinfo | less
+    lshw -class processor
+    dmidecode -t 4
+    cpuid
+
+TRY: compare with the output from 'file /sbin/init' (the installed version/arch of the OS)
+
+Example use case:
+    The i386 is 32 bit, x86_64 is 64 bit (amd or intel) and is equivalent to amd64, however 
+    ia64 is not the same (this was intel's 64bit Itanium processor). I first ran into this 
+    distinction when attempting to install SystemImager, the forked Remastersys project, which
+    has all three options.
+    Itaniums were targeted at servers, and so it is unlikely you will come across them on PCs.
+
+
+############# alternate package sources #############
+
+With an editor add a line such as the following to /etc/apt/sources.list
+    deb http://geekconnection.org/remastersys/ubuntu precise main
+You also need to provide the gpg (key) file. To see what keys are currently on your system,
+    sudo apt-key list
+To add a key, 
+    sudo apt-key add keyFile.gpg.key
+Now do a 'apt-get update' and then 'apt-get install' should have more packages available.
+
+Another example, utilizing the sources list dir:
+    REPO=stable
+    REPOFILE=systemimager.org-$REPO.list
+    URL=http://download.systemimager.org/sources.list.d/$REPOFILE
+    sudo wget $URL -O /etc/apt/sources.list.d/$REPOFILE
+    wget http://systemimager.org/pub/brian@thefinleys.com.gpg.key -O - | sudo apt-key add -
+Now do a 'apt-get update' and then 'apt-get install' should have more packages available.
+
+
+############# alternate desktops #############
+
+sudo apt-get install xubuntu-desktop
+sudo apt-get install kubuntu-desktop
+sudo apt-get install awesome
+
+
+############# ctags  #############
+
+If you want to include only source code files with cscope then do this:
+    find . –name “*.cpp” –o –name “*.[ch]” > cscope.files
+then type:
+    cscope –b –q –R
+You cscope database is now created.
+
+When you invoke cscope type:
+    cscope –d   // Prevents the database from getting rebuilt at invocation
+
+
+############# ctags  #############
+
+ctags -R --exclude='.git' .
+
+
+############# Ubuntu 12.04 Add to Panel #############
+
+To add to panel, use MAGIC+ALT+RightClick on the panel itself.
+
+
+############# Find Ubuntu distro info #############
+
+cat /etc/lsb-release
+cat /etc/debian_version
+
+
+############# find devices #############
+
+lsblk
+
+
+############# Secure PDF (pdftk) #############
+
+The pdftk manpage has great examples in it.
+    pdftk file.pdf output file-userOnly.pdf user_pw guest
+
+
+############# set prompt #############
+
+chdir !*;set prompt = "%S%C2:%h %%%s "
+
+
+############# pdftk append example #############
+
+#pdftk 1.pdf 2.pdf 3.pdf cat output 123.pdf
+
+#pdftk A=1.pdf B=2.pdf C=3.pdf cat A B output 12.pdf
+
+
+############# Create a ISO image #############
+
+dd if=/dev/cdrom of=~/cdimage.iso
+
+
+#############How to access the content inside an iso image on linux ###########
+
+An ISO image is a disk image of a CD or DVD and these image files have a .iso 
+file extension and file system used in these image files is ISO 9660. In Linux,
+these files can be accessed by mounting them on a directory using loop device
+
+Note: You need to be root to do this.
+
+1) To access the files in the iso image, we have to mount it on any directory,
+so run:
+
+[root@server ~]# mount -t iso9660 -o loop abc.iso /mnt/test
+
+Here:
+-t option is used to specify filesystem Type
+-o is used to specify extra options (For example: loop , remount etc.)
+loop A loop device is used to makes the files in CD ISO images accessible as a 
+block device.
+
+2) To mount persistently across reboots, do the entry in fstab file:
+
+[root@server ~]# vim /etc/fstab
+
+/path/to/iso   /mnt/test  iso9660  loop,auto   0  0
+
+Now all the files in the iso image will appear in the mount point directory 
+i.e. /mnt/test 
+
+
+############# Reset GNOME desktop menu bars when stuff gets weird #############
+
+killall gnome-panel
+
+
+#### Handy Perl tricks ####
+
+Note: fileName.bak will be created as a backup copy of fileName.
+
+Remove newlines within a single paragraph from a file:
+    perl -i.bak -00 -ple 's/\s*\n\s*/ /g' fileName
+
+Insert a newline after X characters:
+    perl -i.bak 's/(.{1,X})/$1\n/gs' fileName
+
+
+############# Console and Terminal stuff #############
+
+run 'tty' to identify terminal or pseudo terminal
+
+run 'who' to see logins (all ttyN and pts/Z)
+
+
+############# GNOME terminal emulator  #############
+
+Set the default size (ubuntu 10.04):
+System->Preferences->Preferred Applications->System->Custom
+Command: gnome-terminal --geometry=80x40
+Execute flag: -x
+
+
+############# VirtualBox OSE #############
+
+To get a cd drive working: 
+Shutdown the vm
+click on properties for storage in the vm manager
+select guest additions and select empty
+restart the machine
+
+After this, do the same, but select your cd drive and check the passthrough box
+
+
+
+
+********* Does my pc have pae? *********
+
+grep --color=always -i pae /proc/cpuinfo
+
+
+********* HowTo: gen random passwords *********
+
+apg
+
+
+********* HowTo: Switch terminals from command line *********
+
+chvt 7
+
+
+********* Hey! Where did my terminal profiles go?? *********
+
+~/.gconf/apps/gnome-terminal/profiles
+
+gnome-terminal v3.8+ in dconf (debconf?)
+
+`gsettings list-recursively | grep -i org.gnome.terminal`
+
+
+********** etckeeper **********
+
+uses git to track etc, which can sometimes really save your bacon!!
+
+requires sudo in order to see a 'git status'
+
+
+********** secure file deletion (overwrite and optionall delete) **********
+
+Try 'shred'. See 'man shred'. Part of the gnu coreutils.
+
+
+********** Sudoers file quick reference **********
+
+Be sure to edit /etc/sudoers with the 'visudo' command, as it will verify character formatting
+for you prior to saving. Read "user" and "host" as "applicable for these users/hosts".
+
+<user list> <host list> = <operate-as list> <tag list> <command list>
+
+Aliases are referenced with a '%'. Types: User_Alias, Host_Alias, Cmnd_Alias.
+
+Sample entry--allow user tniles to shutdown w/o a password:
+    Cmnd_Alias SHUTDOWN_CMDS = /sbin/poweroff, /sbin/halt, /sbin/reboot
+    tniles ALL=(ALL) NOPASSWD: SHUTDOWN_CMDS
+
+Sample entry--let myuser run vim as root w/o a password, and w/o letting vim shell out (the
+:shell command):
+    myuser ALL = (root) NOPASSWD:NOEXEC: /usr/bin/vim
+
+
+********** Toggle Root Account **********
+
+Enable:  sudo passwd root
+Disable: sudo passwd -dl root
+
+
+********** RANDR extension is not present Error **********
+
+1. System > Administration > Additional Drivers
+2. Remove proprietary video drivers
+3. Reboot
+4. Re-install the drivers (I just go to System > Preferences > Appearance and activate visual effects, and let Ubuntu take care of the rest)
+
+MISC:
+
+If you see the error
+
+	Xlib: extension "RANDR" missing on display ":0.0".
+
+you likely need to edit /etc/X11/xorg.conf to enable composite extensions.
+
+However, this did not work for me. Nvidia drivers getting in the way?
+
+
+********** Antivirus **********
+
+An AV is not strictly necessary for linux, provided the system stays up to date. Could be
+beneficial as a check prior to sharing files with Windows machines.
+
+Try sometime:
+    Install package ClamAV (clamscan).
+    GUI frontend: clamtk.
+
+
+********** Package stuff **********
+
+List files a package will write:
+    apt-file list packageName
+
+
+********** Ubuntu Crash reports **********
+
+Getting annoying crash (apport) messages? Try:
+	rm -f /var/crash/*
+
+
+********** Read/Convert 3D Files **********
+
+Blender
+LibreCad
+WhiteDune
+Meshlab
+
+Linux-readable mesh files (to name a few, such as those you can get from solidworks):
+    VRML, WRL (VRML2), STL, DXF, STEP
+
+FreeCAD works very well for viewing STEP files, e.g. can toggle visibility of components.
+
+
+********** Incremental Backups (bak, deja-dup, duplicity) **********
+
+Incremental backups are provided through the ubuntu Deja-dup GUI, which is a front end for
+duplicity, which uses rsync at its core.
+
+User settings are stored in ~/.gconf/apps/deja-dup/ and in later versions ~/.config/dconf.
+
+Currently, specifying backup times is not implemented. However, you can sort of work around
+this by creating a cron entry using 'deja-dup --backup' and turning off the auto option in the
+GUI (see 'Experiment', below, which is necessary as going through cron for some reason will 
+not read the user settings files). Note that the GUI should still be used for adjusting other 
+settings.
+
+Ignoring/Adding (hidden) folders:
+    From the GUI, select the "+" of the ignore/add (respectively). When nautilus (the file
+    browser) pops up, right click in some white space and select "Show Hidden Files". Now you 
+    can select hidden files to ignore. This is sometimes necessary due to applications which
+    store files in your home dot files which have root ownership.
+    
+Experiment (verify first):
+    Crontab:
+        */15 * * * *  /home/useracct/bin/cronBackup
+    Script:
+        #!/bin/bash
+        export DISPLAY=:0
+        sessionfile=`find "${HOME}/.dbus/session-bus/" -type f`
+        export `grep "DBUS_SESSION_BUS_ADDRESS" "${sessionfile}" | sed '/^#/d'`
+        /usr/bin/deja-dup --backup --auto
+
+How to Restore (fine-grained, single file or directory):
+    Open nautilus. For a directory, right click in the directory. For a file, right click on 
+    the file. Choose 'Restore Missing Files...' or 'Revert to Previous Version...', 
+    respectively.
+    Command line: 'deja-dup --restore file1 file2'
+
+Did duplicity do a full backup, or an incremental one?
+    Look at the output files (backup location) for duplicity's output files. They will either
+    say "duplicity-full*" or "duplicity-inc*" followed by a date/time code.
+
+How to Verify
+    Try restoring to a Virtual Machine.
+
+
+********** Map your Linux home dir to a Windows drive **********
+
+Do a 'pwd' in your home dir, e.g.
+    % pwd 
+    % /media/serverA/global.net/vol/myDrives/tniles
+
+In Windows, map a drive to this location but with the following alterations:
+    \\serverA.global.net\myDrives\tniles 
+
+
+********* Makefile magic: *********
+
+$@ The file name of the target.
+
+$< The name of the first dependency.
+
+$* The part of a filename which matched a suffix rule.
+
+$? The names of all the dependencies newer than the target separated by spaces.
+
+$^ The names of all the dependencies separated by spaces, but with duplicate
+   names removed.
+
+$+ The names of all the dependencies separated by spaces with duplicate names
+   included and in the same order as in the rule. 
+
+
+********* Makefile magic: *********
+
+$# Number of cli args or positional params
+
+$* All of the positional params, seen as a single word (must be quoted)
+
+$@ Same as $* but each param is a quoted string (no expansion or interpretation)
+
+$- Flags passed to script (using set)
+
+$! Process ID of last job run in background (useful for job control)
+  
+$_ Special var set to final arg of previous command executed
+
+$? Exit status of a command or function or the script itself
+
+$$ Process ID of the script itself
+
+
+********* Customizing tcsh and Key mapping: *********
+
+tcsh will not read the .cshrc file if you have a .tcshrc file.  In
+that case the commands need to go in the .tcshrc file.
+
+Note that when you press ctrl-v nothing should display on your screen,
+it just tells the server to insert the next character literally
+instead of trying to interpret it.
+
+bindkey ^[[1~ beginning-of-line
+bindkey ^[[4~ end-of-line
+
+In order to get this to work from your PC, you need to first find out
+how those functions are mapped on the server.  Typically
+beginning-of-line is mapped to "^A" which means ctrl-A, and
+end-of-line is mapped to "^E" which means ctrl-E.  You can verify this
+by typing 'bindkey' by itself or 'bindkey |grep beginning' and looking
+for the appropriate line.
+
+For more information on bindkey you can type 'man tcsh' on the server,
+and look for the bindkey section.
+
+
+********* X-term font and window sizes: *********
+
+The x-term launcher on the desktop can specify some command options in the 
+form of xterm [options]. 
+
+The default is: 
+/usr/bin/xterm -ls -sb -sl 10240
+
+My customized launcher is: 
+/usr/bin/xterm -ls -sb -sl 10240 -geometry 80x35 -fn 10x20 -bg {cbg} -fg {cfg}
+
+where cbg = { darkblue || lightblue } and cfg = { yellow || black }
+
+As of 2012, here's another launcher which I use:
+/usr/bin/xterm -ls -sb -sl 7777 -geometry 80x45 -fn 10x20 -bg steelblue4 -fg chartreuse3
+
+Available fonts are: 4x6, 5x7, 5x8, 6x10, 6x12, 6x13, 6x9, 7x13, 7x14, 
+8x13, 8x16, 9x15, 9x18, 10x20, 12x13, 12x24, 18x18. If one of these doesn't 
+work, just try another one. If this fails to provide a satisfactory choice, 
+then try searching for installed fonts on your system.
+
+
+****** cscope ******
+
+To build the cscope database, do this:
+make_cc_cscope -all (database includes all platforms)
+-or-
+make_cc_cscope -mk (database only includes mk code)
+It starts up cscope on completion.
+
+To run cscope, cd to your source files' parent dir and type cscope.
+Type <TAB> to switch between upper and lower areas, and ^D to exit.
+
+Running with a -d option tells cscope to not update the entire database
+upon run. See "man cscope" for more details. 
+
+
+****** Misc Linux host utilities ******
+
+memUseBySymbol <filename>
+
+
+************  Helpful linux console commands  ***************
+
+dosfsck /dev/sda1       - This checks the first (D:/ on dos system) drive for errors
+dosfsck /dev/sdb1       - This checks the second (E:/ on dos system) drive for errors
+dosfsck -r /dev/sda1    - This tries to repair the first drive
+du -s -h /usr/local/home/E:
+df /usr/local/home/E:
+cat /proc/meminfo       - Show free memory, etc.
+dmesg                   - display the trace of Linux startup messages again
+free                    - second line shows what's really free in memory
+
+
+****** debugging with ddd *******
+
+ddd --debugger /path/to/app-gdb --gdb --nx binaryFile.exe /path/to/core.*
+
+On target (linux console) run the debugger:
+If you're starting up normally from linux console, do these steps:
+        * cd /usr/local/bin
+        * gdbserver foo:1234 binaryFile.exe &
+
+Or if you're connecting to a running prototype, do these steps:
+        * use telnet or kermit to get a prototype console.
+        * cd /usr/local/bin
+        * ps x (or ps mx)
+        * determine which thread has the lowest <PID>
+        * gdbserver foo:1234 --attach <PID> &
+        * If you want to know which ThreadID is what, type v2pShowPids from the
+          telnet debug console, and it will print on the linux console.
+          (This also prints on the console at powerup.)
+
+In the DDD command window, type (prototype name may be different):
+target remote device:port
+
+Click on the "Cont" button in the command toolbox to continue the
+startup process (unless you want to set a breakpoint first.)
+If there's no Cont button, click on Edit->Command tool
+
+To exit ddd, hit <ESC> in the command window, then click File->Exit.
+
+
+********* Example stdin delay: *********
+
+#ifdef EXE_STOP_DEAD
+        char input[100];
+        printf("Enter c<ret> to continue\n");
+        scanf("%s", &input);
+#endif
+
+
+############# Things to research (safety), then Try Sometime: ###########
+
+nvidia-settings -q gpucoretemp -t | awk '{s+=$1}END{print s/NR}' RS=" "
+
+
+dmesg -xT -l err,crit,emerg
+
+
+wget -r -l1 -H -t1 -nd -N -np -A.mp3 -erobots=off [url of website]
+
+
+tar -cf "../${PWD##*/}.tar" .
+
+
+find -name .git -prune -o -type f -exec md5sum {} \; | sort -k2 | md5sum
+2013-10-28 22:14:08
+Create md5sum of a directory
+
+
+git reset --hard <commidId> && git clean -f
+100% rollback files to a specific revision
+
+
+gcc -dM -E - </dev/null
+
+

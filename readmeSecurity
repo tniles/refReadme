@@ -1,0 +1,200 @@
+
+##############################################################################################
+gpg2 -- Gnu Privacy Guard
+
+Use 'gpg2' for embedded and servers, use 'gpg2' for desktop OSes. Uses OpenPGP protocol.
+    man gpg2
+    See ~/.gnupg/gpg2.conf for setting configuration details. If you need to run both gpg2 and
+    gpg2, you can use gpg2.conf and gpg2.conf-2.
+    Note: I use an alias so I don't have to type the extra '2' every time.
+    Note: a lot of this comes from Paul's tutorial at madboa.com and digitalocean.com
+
+List known/imported keys:
+    gpg2 --list-keys
+Delete keys:
+    gpg2 --delete-key 'Name'
+
+Gen private key:
+    gpg2 --gen-key
+    {{{
+    You’ll have to answer a bunch of questions:
+        * What kind and size of key you want; the defaults are probably good enough.
+        * How long the key should be valid. You can safely choose a non-expiring key for your 
+        own use. If you plan to use a key for public signing, you might want to consider a 
+        yearly expiration.
+        * Your real name and e-mail address; these are necessary for identifying your key in a
+        larger set of keys.
+        * A comment for your key, perhaps to distinquish a key used for special tasks like 
+        signing software releases. The comment can be empty.
+        * A passphrase. Whatever you do, don’t forget it! Your key, and all your encrypted 
+        files, will be useless if you do.
+    }}}
+
+Gen public ASCII key:
+    gpg2 --armor --output gpg2pubkey.txt --export 'your name'
+    {{{
+    ISSUE: Why the 'armor' option? (default is binary output)
+    You can freely distribute this file by sending it to friends, posting it on your web site,
+    or whatever.
+    You might also want to register your key with public keyservers so that others can 
+    retrieve your key without having to contact you directly.
+    Some people prefer to exchange public keys physically and in person. A lot of people 
+    simply make their public key available on their website.
+    }}}
+
+Send public key to a keyserver:
+    gpg2 --send-keys 'your name' --keyserver urlOfKeySrv
+Search keys on a keyserver:
+    gpg2 --search-keys 'Name' --keyserver urlOfKeySrv
+    Popular keyserver which syncs with other keyservers: pgp.mit.edu
+
+Generate encrypted file fileName.gpg:
+    gpg2 --encrypt --recipient 'Recipient Name' fileName
+    -or-
+    gpg2 -e -r Name fileName
+
+Decrypt file fileName.gpg:
+    gpg2 --output fileName --decrypt fileName.gpg
+
+Edit an encrypted file transparently:
+    Try sometime: gnupg.vim plugin (http://www.vim.org/scripts/script.php?script_id=3645)
+    -or-
+    Makefile approach:
+    {{{
+        # example Makefile for viewing/editing an encrypted file
+        gpg2ID = you@your.address
+        FILEPLAIN = fileName.txt
+        FILECRYPT = $(FILEPLAIN).gpg2
+
+        gpg2 = gpg2
+        RM = /bin/rm -i
+        VI = vim
+
+        all:
+            @echo ""
+            @echo "usage:"
+            @echo ""
+            @echo "* make view -- to see $(FILEPLAIN)"
+            @echo "* make edit -- to edit $(FILEPLAIN)"
+            @echo ""
+
+        edit:
+            @umask 0077;\
+              $(gpg2) --output $(FILEPLAIN) --decrypt $(FILECRYPT)
+            @$(VI) $(FILEPLAIN)
+            @umask 0077;\
+              $(gpg2) --encrypt --recipient $(gpg2ID) $(FILEPLAIN)
+            @$(RM) $(FILEPLAIN)
+
+        view:
+            @umask 0077; $(gpg2) --decrypt $(FILECRYPT) | less
+    }}}
+
+Fingerprint (quick verification):
+    gpg2 --fingerprint yourEmail@address.com
+
+Verify a public key (*.asc or *.sig):
+    gpg2 --verify key.asc
+
+Import a public key (*.asc or *.sig):
+    gpg2 --import key.asc
+
+Detached Signatures (*.asc):
+    For verifying correct files:
+        gpg2 --verify critical.tar.gz.asc crucial.tar.gz
+    For authorizing/signing correct files:
+        gpg2 --armor --detach-sign yourFile.zip
+
+Revoking a keypair (in case of breach or other failure):
+    gpg2 --gen-revoke yourEmail@address.com
+    Will ask for a comment. It is wise to make a backup of this output just in case you later
+    find a file was encrypted with it rendering it now unreadable without the revoked key.
+
+Mark as trusted (sign another's public key):
+    gpg2 --sign-key someone@example.com
+Send the signed key back to the person after doing this:
+    gpg --export --armor someone@example.com
+    This will allow others to see that you trust this person, too. The person behind
+    someone@example.com will then need to import this signed key into their keyring.
+
+Encrypt a mail message:
+    gpg2 --encrypt --sign --armor -r someone@example.com fileName
+    If you also wish to be able to read it later:
+    gpg2 --encrypt --sign --armor -r someone@example.com -r 'your name' fileName
+
+Update keyring:
+    gpg2 --refresh-keys
+    gpg2 --keyserver urlOfKeySrv --refresh-keys     # all keys from KeySrv
+
+
+##############################################################################################
+Increasing Entropy with haveged:
+
+    sudo apt-get install haveged
+    vim /etc/default/haveged
+        DAEMON_ARGS="-w 1024"
+    update-rc.d haveged defaults
+    -or-
+    yum install haveged
+    chkconfig haveged on
+
+Test Entropy:
+    cat /dev/random | rngtest -c 1000
+    # A small number of failures is okay, but with haveged 998-1000 successes is common.
+Test Available Entropy:
+    cat /proc/sys/kernel/random/entropy_avail
+    # Typically above 1000 unless there have been many recent requests for random data.
+
+
+##############################################################################################
+ACL (Access Control List):
+
+<import to here from other readmes>
+
+
+##############################################################################################
+Encrypted Folders:
+    Use 'encfs'. Requires fuse extensions/setup (defaults okay in ubuntu >10.04).
+    Usage:
+        encfs pathToEncryptedDir pathToVisibleDir
+
+
+##############################################################################################
+Password Storage:
+    system          /etc/shadow
+    network         /etc/NetworkManager/system-connections
+    gnome keyring   ~/.gnome2/keyrings
+
+
+##############################################################################################
+Password recovery:
+    Use grub and boot into a Recovery Mode. This boots into a root shell, where 'passwd 
+    userName' will let you choose a new password.
+
+
+##############################################################################################
+Try Sometime:
+    Pre-installed apps on Anonymous-OS:
+        – ParolaPass Password Generator
+        – Find Host IP
+        – Anonymous HOIC
+        – Ddosim
+        – Pyloris
+        – Slowloris (beware of zeus netbot version, 508k instead of typ 58k)
+        – TorsHammer
+        – Sqlmap
+        – Havij
+        – Sql Poison
+        – Admin Finder
+        – John the Ripper
+        – Hash Identifier
+        – Tor
+        – XChat IRC
+        – Pidgin
+        – Vidalia
+        – Polipo
+        – JonDo
+        – i2p
+        – Wireshark
+        – Zenmap
+

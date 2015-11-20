@@ -1,0 +1,308 @@
+SSL (port 443) default site example:
+    sudo a2enmod ssl
+    sudo a2ensite default-ssl
+    Try browsing to https://localhost or https://localhost:443
+
+    NOTE: if this works, setup forwarding from 80 to 443 (this should be done for you by 
+    default, i.e. a vhost on listening on 80 and 443) and you are done. Be sure to edit the
+    /etc/apache2/ports.conf file and add the "NameVirtualHost *:443" directive.
+
+    NOTE: this example assumes the default self-signed "snakeoil" cert (test purposes only!).
+        sudo make-ssl-cert generate-default-snakeoil --force-overwrite
+
+SSL Using Certs site example:
+    * cd /etc/apache2/sites-available
+    * sudo cp default-ssl website1-ssl
+    * Edit Contents of website1-ssl to match:
+      (short form)
+        ServerName https://www.website1.com
+        ServerAlias www.website1.com
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html/website1.com
+
+        SSLEngine on
+        SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
+        SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+    {{{(long form)
+        <IfModule mod_ssl.c>
+
+        <VirtualHost *:443>
+            ServerName https://www.website1.com
+            ServerAlias www.website1.com
+            ServerAdmin webmaster@localhost
+            DocumentRoot /var/www/html/website1.com
+
+            SSLEngine on
+            SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
+            SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+
+            <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+            </Directory>
+            <Directory /var/www>
+                Options Indexes FollowSymLinks MultiViews
+                AllowOverride None
+                Order allow,deny
+                allow from all
+            </Directory>
+
+            ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
+            <Directory "/usr/lib/cgi-bin">
+                AllowOverride None
+                Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+                Order allow,deny
+                Allow from all
+            </Directory>
+
+            ErrorLog ${APACHE_LOG_DIR}/error.log
+
+            # Possible values include: debug, info, notice, warn, error, crit,
+            # alert, emerg.
+            LogLevel warn
+
+            CustomLog ${APACHE_LOG_DIR}/ssl_access.log combined
+
+            Alias /doc/ "/usr/share/doc/"
+            <Directory "/usr/share/doc/">
+                Options Indexes MultiViews FollowSymLinks
+                AllowOverride None
+                Order deny,allow
+                Deny from all
+                Allow from 127.0.0.0/255.0.0.0 ::1/128
+            </Directory>
+
+            <FilesMatch "\.(cgi|shtml|phtml|php)$">
+                SSLOptions +StdEnvVars
+            </FilesMatch>
+            <Directory /usr/lib/cgi-bin>
+                SSLOptions +StdEnvVars
+            </Directory>
+            BrowserMatch "MSIE [2-6]" \
+                nokeepalive ssl-unclean-shutdown \
+                downgrade-1.0 force-response-1.0
+            # MSIE 7 and newer should be able to use keepalive
+            BrowserMatch "MSIE [17-9]" ssl-unclean-shutdown
+        </VirtualHost>
+
+        <VirtualHost *:443>
+            ServerName https://www.website2.com
+            ServerAlias www.website2.com
+            ServerAdmin webmaster@localhost
+            DocumentRoot /var/www/html/website2.com
+
+            SSLEngine on
+            SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
+            SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+
+            <FilesMatch "\.(cgi|shtml|phtml|php)$">
+                SSLOptions +StdEnvVars
+            </FilesMatch>
+            <Directory /usr/lib/cgi-bin>
+                SSLOptions +StdEnvVars
+            </Directory>
+            BrowserMatch "MSIE [2-6]" \
+                nokeepalive ssl-unclean-shutdown \
+                downgrade-1.0 force-response-1.0
+            # MSIE 7 and newer should be able to use keepalive
+            BrowserMatch "MSIE [17-9]" ssl-unclean-shutdown
+        </VirtualHost>
+
+        </IfModule> 
+
+    }}}     # note: brackets are for vim folds
+    * Then issue the commands:
+        sudo a2enmod ssl
+        sudo a2ensite website1-ssl
+        sudo service apache2 restart
+
+    IF YOU USED REAL CERTS: You will know whether this has worked if Firefox does NOT tell you
+    it doesn't recognize the site's certificate.
+
+    To make all port 80 traffic redirect to port 443, place a redirect statement in the port 
+    80 block (see 'redirect' elsewhere in this doc).
+
+SSL Certs (general):
+    Don't use snakeoil certs! Although "encrypted", these are as good as a plaintext 
+    connection (http://serverfault.com/questions/587832/do-i-have-to-update-my-snakeoil-certificate-after-updating-openssl-heartbleed).
+    Not sure why, but I imagine it has something to do with a known or default encryption key.
+    Sign your own cert (option 1, below), or use tinyca to create a legit cert (option 2).
+
+    A certificate (*.crt or *.cert), is the public key of a private-public key pair. It should
+    be understood that this is a key pair and the two are generated together.
+
+    At the end of each process, you should have a PRIVATE KEY (*.key) and a PUBLIC 
+    CERTIFICATE (*.crt). Note that any cert can sign or be signed by another cert. While any
+    cert can be self signed, typically you only want the rootCA to be self signed (this
+    becomes the Certificate Authority). As the CA, the root cert can be used to sign other
+    certs (which can either be website certs or Sub-Certificate Authorities). In order to sign
+    another cert, first create the new cert, and with it generate a Certificate Signing
+    Request (CSR). The CSR can then be processed to output a brand spanking new cert signed by
+    the CA (in most cases, the rootCA). The rootCA will be imported to your browsers/devices
+    so they trust your website(s). Your server will then serve your website's cert, and they 
+    will be trusted by the browser since they have (or at least, should have) been signed by
+    your rootCA or a subCA of your rootCA.
+
+    NOTE: use a different password for each cert you create!
+
+
+SSL CERT GENERATION (USING OPENSSL):
+    Create the certificates, then move them to the folder specified (recommend: a 'private'
+    folder inside the apache directory so it is nearby and easier to spot permissions issues,
+    e.g.  that www-data has access to it, although so far that does not seem necessary).
+
+    HIDE THE SUBCA KEYS!! DO NOT PLACE KEYS WHERE THE WEBSERVER CAN GET TO THEM!!
+        EDIT: try to be smart about where to put these. The server/ssl engine needs access to
+        them, but never ever make the rootCA.key available anywhere.
+
+    openssl req: pkcs#10/12 utility for making rootCAs, among other things.
+    openssl x509: certificate display/signing utility for making subCAs, among other things.
+    NOTE: both have switches for the other, so it can be confusing (you have been warned!).
+
+    See man 1 x509 for details on switches.
+    See man 1 req for details on switches.
+    For scripting with req, recommend use of -subj switch:
+        -subj "/C=US/ST=New York/L=Brooklyn/O=Brooklyn Company/CN=domain.com"
+
+    Maybe look into integrating 'openssl rsa' sometime (it would seem the req and x509
+    commands already have builtins for this). For example, is there anything to be gained in
+    doing two steps, beginning with 'openssl genrsa -out rootCA.key 2048' as opposed to the
+    single command (below) using the '-newkey rsa:2048' switch?
+
+    PKCS Note: use the openssl -des3 switch to password protect your root CA/private key. Use
+    the -nodes switch to avoid encoding the private key (see man 1 pkcs12).
+
+    Enter the necessary information to complete the process (the most important piece is
+    the "Common Name", e.g. your official domain/website/server name or IP address):
+        US, US-State, City, CompanyName, Dept of Awesome, website1.com, webmaster@awesome.com
+
+    NOTE: recommend use of Wildcard Common Names, e.g. *.example.com as this is the only way
+    to cover every rendition/incantation of your url. To be uber-secure, you could have a cert
+    for each subdomain, but this seems bothersome. Note that only one level of wildcard is
+    understood by modern browsers (e.g. *.example.com works, as does *.subdomain.example.com,
+    but *.*.example.com does not work).
+
+    ROOT CA
+    This will provide you a self signed CA with which you can make certs for your websites.
+
+      openssl req -x509 -days 1095 -newkey rsa:2048 -sha256 -keyout rootCA.key -out rootCA.crt
+
+      Use a decently strong passphrase, such as a 12-character apg password.
+
+    SUB CA/CERT 
+    This will provide you a certificate per website, signed by your rootCA.
+        NOTICE! the intermediate file is a *.csr.
+
+    Create (sub) cert:
+        openssl req -newkey rsa:2048 -sha256 -nodes -keyout subCA.key -out subCA.csr
+            NOTE: for a website cert use '-nodes', for a subCA use '-des3' (the default)
+            NOTE: notice no expiration since this is a csr
+            NOTE: if the rootCA/CA supports SHA-2, you should use the '-sha256' switch
+
+        Use a decently strong passphrase, such as a 12-character apg password.
+        Do not use the same passphrase for multiple sub certs.
+
+    Sign cert signing request with root CA and generated sub cert:
+        openssl x509 -in subCA.csr -req -days 365 -out subCA.crt -CA rootCA.crt -CAkey rootCA.key -CAcreateserial
+
+    Note: a byproduct of the -CAcreateserial is a *.srl file with the implemented serial num.
+
+    Verify certs:
+        See 'man 1 verify' for options, error codes, etc.
+
+        Verify a cert was signed by a CA:
+            openssl verify -verbose -CAfile rootCA.crt subCA.crt
+
+        Gives verbose plain text informational output:
+            openssl x509 -text -in rootCA.crt
+
+    Verify keys:
+        openssl rsa -noout -check -in *.key
+
+    Verify cert/key/csr pairs:
+        openssl rsa  -noout -modulus -in domain.key | openssl md5
+        openssl x509 -noout -modulus -in domain.crt | openssl md5
+        openssl req  -noout -modulus -in domain.csr | openssl md5
+        If the outputs match, there is a high probability the triplet is related.
+
+    Verify/view subject of a cert:
+        openssl x509 -noout -subject -in domain.crt
+
+    Permissions and Locations for certs/keys:
+        cd /etc/apache2/ssl
+        sudo chown -R root:www-data /etc/apache2/ssl
+        sudo chmod -R 400 /etc/apache2/ssl
+        sudo chmod 500 /etc/apache2/ssl
+
+    EDIT YOUR SSL WEBSITE CONF FILE TO POINT TO THE CERT AND KEY!
+
+    Why PEM?
+        This is the x509v3 format. It is the default in 'openssl req' and preferred over DER.
+        It is a standard format for openssl and other ssl tools.
+
+    Where should a root CA be kept and where should sub CAs be kept?
+        Certificate Authorities (CAs), which are imported into browser or OS certificate trust
+        stores, do not need to be accessible by the server. In fact, they should likely be 
+
+    Where should a cert be kept and where should a key be kept?
+        Keep both in /etc/apache2/ssl
+        chown root:www-data ; chmod 400 ssl/* ; chmod 500 ssl
+
+    What does ServerAlias really do?
+        The only indicator I've read thus far seems to say the Alias directive is meant for
+        sub-domains (e.g. blog.example.com and about.example.com). So, would it be correct if
+        that makes 'www' a subdomain?
+
+    NOTE: the *.crt suffix allows browsers to recognize the file as a certificate. It needs to
+    be PEM encoded, which is why some examples show *.pem instead of *.crt.
+
+    Remove a passphrase from a private key:
+        openssl rsa -in privateKey.pem -out newPrivateKey.pem
+
+
+IMPORTING CERTS (END USER):
+
+    KEEP THE KEYS PRIVATE! ONLY DISTRIBUTE CERTS, NEVER KEYS! In this process, you will give
+    users the rootCA.crt, but never the *.key.
+
+    Instructions for Firefox:
+        Edit > Preferences
+        Advanced tab > Certificates tab
+        Select View Certificates > Authorities tab
+        Click Import, select your root cert, click ok
+        Restart the browser (verify all tabs/windows close)
+
+    Instructions for Internet Explorer:
+        Tools menu > Internet options
+        Content tab > Click on the Certificates button
+        Go to Trusted Root Certificates
+        Select Import and locate the certificate to import
+        Restart the browser (verify all tabs/windows close)
+
+    Instructions for Google Chrome:
+        Go to Under the Hood settings (Wrench icon > Options > Under the Hood, or the URL 
+            chrome://settings/certificates)
+        In the HTTPS/SSL area, click Manage Certificates
+        Go to the Trusted Root Certification Authorities tab
+        Click Import and locate the certificate to import
+        ##### Note: Chrome may also require fine tuning:
+        Chrome Settings > Show advanced settings > HTTPS/SSL > Manage Certificates
+        Click Authorities tab
+        Find your certificate, click Edit, and check all boxes
+        Restart the browser (verify all tabs/windows close)
+
+    ALTERNATE: assimilate your root ca into (ubuntu's) pre-installed cert store
+        cp rootCA.crt /usr/share/ca-certificates
+        Edit /etc/ca-certificates.conf with the relative path to the cert you just added
+        sudo update-ca-certificates
+        Now most of your services will be able to find your rootCA cert.
+
+    Having your own root ca integrated like this also enables SSL integration into various
+    services such as CUPS, postfix (AUTH SMTP), dovecot (IMAP), or even for signing and
+    encrypting emails.
+
+##############################################################################################
+try sometime:
+SSL CERT GENERATION (USING CERTUTIL OF THE NSS LIBRARY):
+
+

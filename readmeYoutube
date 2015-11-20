@@ -1,0 +1,41 @@
+YOUTUBE
+
+Flash elements have a tendency to take over your keyboard shortcuts. At some point there was
+a firefox add-on which installed a keyboard shortcut to background the flash plugin (e.g.
+such as a youtube page, which is entirely run by the plugin, rendering your keyboard useless).
+Try: Flashblock Ultimate Alt Zero
+
+URL Tricks:
+
+Cue Time - suffix "&t=XmYs" to cue at X minutes and Y seconds
+
+
+Keyboard Shortcuts:
+
+    Key1            Key2        Function
+    ####            ####        ########
+    Spacebar        K           Play/Pause
+
+    Left Arrow      J           Jump back 3 seconds when playing
+                                Jump back one frame when paused
+
+    Right Arrow     L           Jump back 3 seconds when playing
+                                Jump back one frame when paused
+
+    0                           Jump to beginning
+
+    0-9                         Jump to decades in percent (e.g. 5=50%, 9=90%)
+
+    M                           Mute
+
+    Up Arrow                    Increase Volume (5%)
+
+    Down Arrow                  Decrease Volume (5%)
+
+    F                           FullScreen Toggle
+
+
+Easter Egg:
+    
+    At the beginning of a loading video, press up+left arrows together to commence a game of
+    snake! :-)

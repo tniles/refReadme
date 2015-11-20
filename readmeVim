@@ -1,0 +1,31 @@
+
+
+####################################
+To try: Snippet Managers
+
+SnippetsEmu
+SnipMate
+XPTemplate
+UltiSnips
+
+
+####################################
+IDENTIFYING (ODD) CHARACTERS
+
+show character under cursor as ascii
+    ga
+show character under cursor as utf8, including unicode and hex codes
+    g8
+Find an illegal UTF-8 byte sequence at or after the cursor.
+    8g8
+    Note: works either 1) when 'encoding' is any 8-bit encoding or 2) when 'encoding' is 
+    "utf-8" and 'fileencoding' is any 8-bit encoding
+
+On a single line you can use f<char> and then ; to go forward or , to go backward.
+On multiple line, you must use /<char> and then n to go forward (or N backward).
+Alternatively, your problem might be solved by using regexp and substitute, ie
+    :%s/[your odd character]//g
+To manage to copy and paste your "odd character", you should go in visual using v to select 
+the character, then y+ESC. Then type:
+    :%s/<CTRL+r>"//g
+<CTRL+r>" will copy the content of the copy register in the command line.

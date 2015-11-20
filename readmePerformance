@@ -1,0 +1,23 @@
+
+Using the 'time' command:
+    > touch $(seq 1 100)
+    > unlink $(seq 1 100)
+        unlink: extra operand `2'
+
+    > touch $(seq 1 100)
+    > time rm $(seq 1 100)
+        real    0m0.048s
+        user    0m0.004s
+        sys     0m0.008s
+
+    > touch $(seq 1 100)
+    > time for i in $(seq 1 100); do rm $i; done
+        real    0m0.207s
+        user    0m0.044s
+        sys     0m0.112s
+
+    > touch $(seq 1 100)
+    > time for i in $(seq 1 100); do unlink $i; done
+        real    0m0.167s
+        user    0m0.048s
+        sys     0m0.120s

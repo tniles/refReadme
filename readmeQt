@@ -1,0 +1,51 @@
+To use qtCreator to debug like VS
+
+> Build the app as above, with qmake and make.
+> /opt/Qt5.3.1/Tools/QtCreator/bin/qtcreator &
+> Open project, foo.pro in the foo repo
+
+(The first time, it will ask you to configure the project.
+Just accept the defaults.)
+
+> Go to the Projects tab on the left.
+> Make sure the Shadow build checkbox is not checked.
+> make sure the qmake and Make specs make sense.
+> Go to the Run tab at the top of the page next to build tab.
+> On the Run Settings page:
+> Select from Run Configuration dropdown list: app
+> Change the "Working directory" to the foo runtime bin. 
+
+E.g., ~/Desktop/foo/public/Linux64/debug/runtime/bin
+
+> Press the debug play button, the play button with a bug on it.
+    OR
+  You can start ./runApp.sh from a Terminal window, then attach from Qt:
+> At the top of the Qt window, click on Debug->Start Debugging->Attach to running application.
+> On the list of running applications, near the top, select ~/.app
+> When you attach, it will stop the app. To continue, click the
+  green Continue icon on the left of the screen (below the Run arrow).
+> Now you can insert break points etc.
+
+Attach to process in QtCreator
+
+Sometimes it can be difficult to setup QtCreator for the foo project. It builds fine in the 
+terminal, but you have to create lots of custom rules to get it to build in QtCreator. You 
+don't care about editing files or building in QtCreator, you just want to use QtCreator to 
+debug the app that was built from the terminal.
+
+Launch app from the terminal. If you need to debug startup code, add a popup window as early
+as possible in the program. This will give you time to attach the debugger and set breakpoints
+before you hit OK to continue.
+
+// sudo /opt/Qt5.3.1/Tools/QtCreator/bin/qtcreator &
+// WARNING: DO NOT run builds or edit files from QtCreator when running it with sudo.
+// This will hijack your file permissions and set them to root, which can cause headaches next
+// time you try to build from the terminal. It is best to not even open the foo project when
+// running QtCreator with sudo. Remember: you are here to use the debugger, nothing else.
+//
+// From QtCreator, click Debug >> Start Debugging >> Attach to running application
+// Select app in the list and click "Attach to Process"
+// Now you can set your breakpoints.  click File >> open file or project, and navigate to the 
+// file where you want to set a breakpoint.
+
+

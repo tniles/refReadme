@@ -82,4 +82,22 @@ Of course those are just very simple examples that don't illustrate the full ran
 capabilities that each has to offer.
 
 
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
+If your shell is Bash (or similar), this set of redirections will do the job:
+
+Code:
+$ command 3>&1 1>&2 2>&3 | tee file
+
+What does it mean?
+
+The redirection operator n>&m makes file descriptor n to be a copy of file
+descriptor m. So, whe are:
+- Opening a new file descriptor, 3, that is a copy of file descriptor 1, the
+  standard output;
+- Making file descriptor 1 a copy of file descriptor 2, the standard error
+  output;
+- Making file descriptor 2 to be a copy of file descriptor 3 (the "backup" of
+  the standard output)
+
+In short: we swapped the standard output and the standard error output.

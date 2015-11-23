@@ -56,6 +56,8 @@ PCB
     v   view extents
     ctrl+S   adjust hole (use shift key to reverse)
 
+    To edit the text of some silk screen, the easiest thing to do is to edit the file by hand.
+
 ##########
 Thermals:
     Use the shift key to change the style of thermal

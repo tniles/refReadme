@@ -65,10 +65,12 @@ Which remote is the branch tracking?
     Method 2: git rev-parse --abbrev-ref master@{upstream}
 
 Git command on multiple repos:
+# for fh in `ls` ; do if [[ -d $fh ]] ; then cd $fh ; pwd && git status ; cd .. ; fi done
     # for fh in `ls`; do cd $fh ; pwd && git status ; cd ..; done
     # for fh in `ls`; do cd $fh ; pwd && git remote -v ; cd ..; done
     # 'foreach' is a command for submodules
     #alias gfe='git submodule foreach --recursive'
+    # Instead of `ls` and bash [[ -d ]], could use `find . -maxdepth 1 -type d -print`
 
 Clone with submodules
     git clone --recursive <link>

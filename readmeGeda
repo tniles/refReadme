@@ -11,7 +11,7 @@ Checklist for prior to ordering boards (gerber inspection):
     Verify soldermask is covering the appropriate vias and other copper
     Verify pours (polygons) are not leaving odd geometries of copper
     Verify all layers line up (spatially) as expected
-    Verify annular sizes look reasonable (Be generous so you have a enough to solder to! Also,
+    Verify annular sizes look reasonable (Be generous so you have a enough to solder on! Also,
         so board houses don't drill your connection away!)
         Note: prefer octagonal for more clearance and copper area.
     Verify antipads look reasonable
@@ -22,6 +22,7 @@ Checklist for prior to ordering boards (gerber inspection):
 ###########
 Shortcuts:
     NOTE: These Are Case-Sensitive!
+    Also Reference: http://wiki.geda-project.org/geda:pcb-quick_reference
 
 GSCHEM
     h,h     show keyboard shortcuts
@@ -55,8 +56,13 @@ PCB
     l   adjust line (use shift key to reverse)
     v   view extents
     ctrl+S   adjust hole (use shift key to reverse)
+        NOTE: this doesn't work in the + direction with the unity desktop (bug). Best
+        alternative is to select the hole and then use "Select > Change Drilling Hole of
+        Selected Objects > Pins +10".
+    ctrl+O  toggle octagon flag of object under cursor
 
-    To edit the text of some silk screen, the easiest thing to do is to edit the file by hand.
+    To edit the text of some silk screen:
+        Select text, then press 'n'. Alternatively, edit the file by hand.
 
 ##########
 Thermals:
@@ -70,6 +76,26 @@ Thermals:
         Click on existing polygon to receive hole.
         Draw hole.
         Use the delete tool or select hole and delete.
+    Alternately, if on a pin: first use 'k' to increase clearance, then add tracks and use the
+    'j' key. Also, if the library component was correctly drafted, you may find 'k' followed
+    by the official thermal tool will work very well.
+
+    NOTE: 'Shift+P' should act as a polygon close, connecting the most recent point back to
+    the original. This can save a lot of time compared to trying to click on the exact spot
+    over, and over, and over again. :-)
+
+##########
+Soldermask
+
+Activate the soldermask layer and then use 'k'. This will operate on the soldermask clearance
+for desired objects (vias are covered by default in geda).
+
+##########
+Extend Existing Lines
+
+Find the "centroid" of one end of a line by placing the cursor over it. The cursor should
+change to a square with miniature crosshairs. Click and drag to change the line's size and
+angle.
 
 ###########
 Edit Symbols and Custom Symbols:
@@ -312,7 +338,9 @@ gEDA policies for hw revision controls
 # SOLUTION
     Single "revX" tag for schematic&layout&BOM, as they all go together.
     Additional "revX.n" (e.g. revB.3) tags can be assigned for minor updates which should 
-    remain associated with produced "revX{.n}" boards.
+    remain associated with produced "revX{.n}" boards (e.g. a hotfix, such as a single track
+    or pad which was discovered after initial ordering). Just be sure to update all instances
+    of the rev label in all files and locations (bom, schem, pcb, pcb silk).
 
 {{{ Details: timing of tagging revisions--when? (tags aren't supposed to move once published)
     Do not tag Schematics or Layouts until boards are ordered for production (e.g. gerbers 
@@ -339,6 +367,10 @@ gEDA policies for hw revision controls
             On master, Tag schematic at most recent commit relevant to the schematic ("*RevX")
     # Wash, Rinse, Repeat
     Work can now begin at anytime on branches "rev{X+1}/*"
+
+    NOTE: another option is to use Release Candidate "rc" suffixes on tags to signify
+    anticipated releases if for some odd reason tagging cannot wait for the board order to be
+    completed.
 
 {{{ Details: reference vs embedding: does referencing symbols negate source control?
     Yes. You lose the automatic update of component edits by embedding, but there is no other

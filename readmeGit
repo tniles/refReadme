@@ -227,10 +227,10 @@ GIT SPEEDUP ON WINDOWS (ymmv)
 
 ################################################################################
 GIT CONFIG
-    git config --global color.ui true
     git config --global user.name yourUser
     git config --global user.email yourEmail
     git config --global diff.tool kdiff3
+    git config --global color.ui auto
 
     Also add:
     [branch "master"]

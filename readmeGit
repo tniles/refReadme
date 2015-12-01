@@ -48,6 +48,12 @@ Add a remote:
         e.g., git remote add origin /srv/gitLocal/repo.git
         -or-  git remote add origin user@server:proj/repo.git
 
+For a project you've forked:
+    git remote add --track master upstream cloneUrlGoesHere
+    Then, to fetch and merge from the new upstream remote:
+        git fetch upstream
+        git merge upstream/master
+
 Want to get a copy of a new branch and maintain tracking? Here's how:
     git checkout --track origin/branchName
     or simply:
@@ -206,6 +212,16 @@ Find the commit number that introduced the line "string"
     git log -S "string" --source --all
     Pair with finding the latest SHA of file "file"
     git ls-files -s "file"
+
+################################################################################
+GIT PULL = FETCH + MERGE
+
+For most tasks, 'git pull' will do everything you need and expect. When you start dealing
+manually with multiple repos (e.g. forks) or multiple developers who don't have write access
+to the repo (e.g. forks, again), then you may want to break a pull into its fundamental
+elements: 'git fetch' followed by 'git merge'. This has the advantage that if something goes 
+wrong, you can use 'git merge --abort' to return to square one. Mind the man page: try to have
+a clean working directory while performing merges.
 
 
 ################################################################################

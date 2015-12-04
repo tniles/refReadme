@@ -235,13 +235,16 @@ a clean working directory while performing merges.
 
 Example: Replicating a Pull Request
     Common tools such as github or atlassian's "pull request" can be replicated with a
-    'git merge'. Note: 'git request-pull' is a different mechanism and serves a different
-    purpose (provides a simple preformatted email message for a project maintainer). This
-    requires a non-fast-forward merge.
+    'git merge'. This requires a non-fast-forward merge:
     # git fetch origin branchName:branchName
     # git merge --no-ff -m "merge commit msg" branchName
-    Note that 'git pull' has the --no-ff option as well, but for reasons outlined above it may
+    Note: if -m is excluded, git will autogenerate a "merged branchName" message for you (does
+    not launch editor).
+    Note: 'git pull' has the --no-ff option as well, but for reasons outlined above it may
     be desirable to do a separate fetch and merge.
+
+    Note: 'git request-pull' is a different mechanism and serves a different purpose
+    (provides a simple preformatted email message for a project maintainer).
 
 ################################################################################
 GIT LOG

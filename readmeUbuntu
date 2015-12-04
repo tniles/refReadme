@@ -422,7 +422,7 @@ $+ The names of all the dependencies separated by spaces with duplicate names
    included and in the same order as in the rule. 
 
 
-********* Makefile magic: *********
+********* Bash script magic: *********
 
 $# Number of cli args or positional params
 

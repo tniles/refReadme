@@ -4,6 +4,10 @@ NOTE: windoze commands at end of document.
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
+Find your external IP:
+    # NOTE: this method requires "going out" of network
+    lynx -dump -hiddenlinks=ignore -nolist -verbose http://checkip.dyndns.org
+
 Flush DNS cache:
     On Ubuntu 11.04 and below, you would need to install (or have previously installed) a dns
     caching program. In which case, you would use that program's flushing mechanism, e.g.:
@@ -143,6 +147,11 @@ Find ip addr:
 
 Connect if to ip:
     sudo ifconfig eth0 10.0.0.100 netmask 255.255.255.0
+
+Find default gateway:
+    route -n
+    netstat -r -n
+    ip route show
 
 route:
     Proceed with caution!! Can list and manipulate routing tables. E.g.

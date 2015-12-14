@@ -318,6 +318,30 @@ Improvements:
     Pads to accept thermal tool.
 
 ##########################################
+hierarchical circuits
+
+Seems like there's a lot of info on the web for this sort of stuff, but it's a bit scattered
+and some of it dated (using older versions of geda). The basic idea I think is sitll the same.
+Here's the process I found to work best:
+
+    CREATION OF SUBCIRCUITS
+    * Create a new symbol to represent your building block (this will be the parent symbol)
+        - Add pins, text, a refdes, etc.
+        - Add the "source" attribute, which should be the name of the schematic this 
+          component/block represents (mySubCkt.sch)
+        - Add the component to your library (myHierBlock.sym) 
+            NOTE: the pin names within mySubCkt.sch should match the appropriate pin names in
+            the myHierBlock.sym symbol. This is how connections between levels of hierarchy
+            are established.
+            KEY (what the netlister will look for): pin-label of component (*.sym) to connect
+            to the refdes of the subcircuit (*.sch); these strings must match!
+    * You should now be able to open a fresh schematic (blank page) and add this symbol. View
+      the subcircuit by selecting the component and selecting Hierarchy > Down Schematic. 
+
+    USE OF SUBCIRCUITS
+    * Netlisting: run 'gnetlist -g geda hier_1.sch' and verify there are no errors.
+
+##########################################
 gEDA policies for hw revision controls
 
 {{{ Details: integration of schematic and pcb layout cad files.
@@ -362,9 +386,20 @@ gEDA policies for hw revision controls
         Merge either to master when complete (or only once tagged??)
         Order boards with gerbers generated on master (gates tagging)
         Now tag revision, referencing naming convention:
-            # git tag -a "tagName" shaVal
-            On master, Tag pcb at this commit for layout ("*RevX")
-            On master, Tag schematic at most recent commit relevant to the schematic ("*RevX")
+            # git tag -am "message/description" "tagName" shaVal
+            # NOTE: 'shaVal' seems necessary to display tags correctly (e.g. gitweb).
+            On master, Tag everything: "revX"
+                If for some *very odd* reason things are not coherent between all files--this
+                should not normally be the case--then make separate tags, i.e. only for the
+                files which have advanced:
+                    For updated bom layout: "revXBom"
+                    For updated pcb layout: "revXPcb"
+                    For updated schem layout: "revXSchem"
+                In these cases, it is advisable to clearly demarcate the differences in the
+                tag message, e.g. "revA schematic, revB pcb, revB Bom".
+        Publish:
+            # git push --tags
+
     # Wash, Rinse, Repeat
     Work can now begin at anytime on branches "rev{X+1}/*"
 

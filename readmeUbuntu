@@ -138,9 +138,23 @@ cat /etc/lsb-release
 cat /etc/debian_version
 
 
-############# find devices #############
+############# find devices, such as usb devices #############
 
 lsblk
+
+sudo fdisk -l
+
+or search through /dev/disk/by-*
+
+Recreate a automount by hand via cli:
+    gvfs-mount -d /dev/devName                      # devName e.g. sdf1
+
+Rename a partition:
+    First identify device, e.g. sdf1
+    echo "mtools_skip_check=1" >> ~/.mtoolsrc       # fends of block mismatch errors
+    sudo umount /media/disk/                        # if mounted already
+    sudo mlabel -i /dev/sdf1 ::"newLabel"
+    gvfs-mount -d /dev/sdf1
 
 
 ############# Secure PDF (pdftk) #############

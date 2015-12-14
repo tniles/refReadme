@@ -24,20 +24,22 @@ Push a branch to remote
                                     # may not be necessary depending on your git-config
 
 Diff between two branches
-    git diff <branchOne> <branchTwo>
+    git diff branchOne..branchTwo
+    git diff branchOne...branchTwo
 
 Diff between two commits (multiple commits apart)
-    git diff <shaOne> <shaTwo> -- <filename>
+    git diff shaOne shaTwo -- <filename>
+    NOTE: omit shaOne to compare with uncommitted changes in your working directory
 
 Show remote branches
     git branch -r
 
 Delete a branch on remote and then locally
-    git push origin :<branch>
-    git branch -d <branch>
+    git push origin :branchName
+    git branch -d branchName
 
 Pull a remote branch that you don't have locally already
-    git fetch origin <branch>:<branch>
+    git fetch origin branchName:branchName
     # Note: 'fetch' by itself is always safe (won't clobber anything)
 
 List remotes:
@@ -145,6 +147,23 @@ Rebase on top of another branch (e.g. master)
 # NOTE: if dealing with more complex matters, see man 'git-cherry-pick'
 # NOTE: deleted/lost commits? not even in the reflog? see 'man git-fsck' (--unreachable)
 
+Oops! Need to correct your most recent commit message?
+    git commit --amend
+
+Double Oops! Need to "undo" your amendment?
+    # From StackOverflow:
+    # Move the current head so that it's pointing at the old commit
+    # Leave the index intact for redoing the commit
+    git reset --soft HEAD@{1}
+
+    # commit the current tree using the commit details of the previous
+    # HEAD commit. (Note that HEAD@{1} is pointing somewhere different from the
+    # previous command. It's now pointing at the erroneously amended commit.)
+    git commit -C HEAD@{1}
+
+    Note: this won't really work for an already published/pushed ref. You will want to either
+    force push or find another way to do what you're intending.
+
 Git rid of (delete) the last commit, or n commits
     git reset --soft HEAD^
     git reset --soft HEAD~n
@@ -163,6 +182,22 @@ Table explaining git reset (from git-scm.com):
     File Level   
     reset (commit) [file]       NO      YES     NO          YES
     checkout (commit) [file]    NO      YES     YES         NO
+
+Accidental git reset --hard HEAD ??
+    No worries! It's probably still in one of git's databases, just unreachable. Try:
+        git fsck --cache --unreachable $(git for-each-ref --format="%(objectname)")
+        {{{Sample Output:
+        Checking object directories: 100% (256/256), done.
+        Checking objects: 100% (45/45), done.
+        unreachable commit 0e9c35b3ff48034ef4194850441397e9c8be6feb
+        unreachable blob 2fd133e8908c34fa0aff1f72480b61074240d439
+        unreachable commit 64a82cf9cea375b714f809acf06d3849e990676e
+        unreachable tree 9e0468e8536d1deb5ce29e44ef99a935cb3c7b98
+        }}}
+    Now you can view any of the unreachable commits by using:
+        git show shaVal | less
+    When you find what you're looking for, try:
+        git checkout branch branchName shaVal
 
 Ignore changes to files in the git status report 
 (can still update at a later point in time using git add <fileName> as usual)
@@ -183,6 +218,7 @@ Create release tags             # useful for versioning/landmarking official rel
     git tag -a "tagName" shaVal
         e.g. git tag 1.0.0 1b2e1d63ff
     git tag -a -m "message" "tagName" shaVal
+    # NOTE: 'shaVal' seems necessary to display tags correctly (e.g. gitweb).
     # lightweight tag (do not use the -a, -s, or -m options): NOT preferred as tools such as
     # 'git describe' will not process these types of tags.
     # git tag "tagName" shaVal
@@ -190,7 +226,7 @@ Create release tags             # useful for versioning/landmarking official rel
 
     NOTE: pushes do not push tags unless --tags is specified
         git push --tags         # push all tags
-        git push origin tagName # only push tag tagName
+        git push origin tagName # push only single tag tagName
 
     Tags will appear in graphical history display tools and look like branch labels (refs!).
 
@@ -682,6 +718,7 @@ SECURITY, Read&Write Access:
     git config --system receive.denyDeletes true
     # Note: applies to all branches, not just master. To fine tune to apply to certain 
     # branches, requires a git hook script (pre-push/update).
+    Note: you can still go to the remote repo and delete branches there with '-D'.
 
   To allow world read access, set up http fetching. See
     https://git-scm.com/book/en/v1/Git-on-the-Server-Public-Access
@@ -935,5 +972,6 @@ Try sometime: Git Server (web interface/gui)
 
 FOSS options: RhodeCode, Gitblit, cgit, 
 
+git gc      # (man git-gc)
 
 ################################################################################

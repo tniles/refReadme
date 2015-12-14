@@ -263,6 +263,9 @@ Enable duplicity script (create and chmod +x)
 Create cron job for nightly backups (2AM PST, 9AM UTC0):
     0 09 * * * /bin/nice -n 10 /root/bin/backup.sh >> /root/cronLogs/cronRoot.log
 
+    NOTE: as root, 'crontab -e' will give you the chance to edit the user root's crontab.
+    Centos stores this at /var/spool/cron/root.
+
 
 $$$$$$$$$$$$$$$$$$$ Testing duplicity $$$$$$$$$$$$$$$$$$$
 

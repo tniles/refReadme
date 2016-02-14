@@ -133,6 +133,8 @@ Wireless cards?
     If you run this command, and all output says "no wireless extensions", then... gues what?
     No wireless.
 
+    With wireless present, also see: 'rfkill list all'
+
 **********
  WARNING:  Commands ifconfig, ip, and route will take effect immediately. This is very useful
 ********** for establishing temporary network configurations for test, etc. They are not by

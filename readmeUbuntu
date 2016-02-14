@@ -212,6 +212,8 @@ i.e. /mnt/test
 ############# Reset GNOME desktop menu bars when stuff gets weird #############
 
 killall gnome-panel
+ -or-
+killall unity-2d-panel
 
 
 #### Handy Perl tricks ####

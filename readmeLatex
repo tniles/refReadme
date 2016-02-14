@@ -3,11 +3,11 @@
 ################
 Page numbering:
 
-Here a solution based on LaTeX. It uses the pdfpages package to include the scanned PDF (here 
-called scan.pdf). The PDF page labels you want can be set using the hyperref package with the
-pdfpagelabels option enabled. It uses the normal \thepage macro as a label which can be 
-defined to lower case roman numbers. The page counter is then reset and changed back to normal
-numbers.
+Here a solution based on LaTeX. It uses the pdfpages package to include the 
+scanned PDF (here called scan.pdf). The PDF page labels you want can be set 
+using the hyperref package with the pdfpagelabels option enabled. It uses the 
+normal \thepage macro as a label which can be defined to lower case roman 
+numbers. The page counter is then reset and changed back to normal numbers.
 
 \documentclass[a4paper]{article}% or use 'letterpaper'
 \usepackage{pdfpages}
@@ -23,13 +23,15 @@ numbers.
 \includepdf[pages=4-]{scan.pdf}
 \end{document}
 
-Place the above code into a file (e.g. scan_mod.tex) and compile it with pdflatex:
+Place the above code into a file (e.g. scan_mod.tex) and compile it with 
+pdflatex:
 
 # pdflatex scan_mod
 
-This will produce scan_mod.pdf. However any special annotations incl. hyperlinks will 
-disappear. This shouldn't be any problem with scanned PDFs.
+This will produce scan_mod.pdf. However any special annotations incl. hyperlinks
+will disappear. This shouldn't be any problem with scanned PDFs.
 
-If you need this more often you could write a script which accepts the number of roman 
-numbered pages and the file name(s) as arguments and creates a tempfile with the above code 
-where the name and numbers are variables, which is then compiled.
+If you need this more often you could write a script which accepts the number of
+roman numbered pages and the file name(s) as arguments and creates a tempfile 
+with the above code where the name and numbers are variables, which is then 
+compiled.

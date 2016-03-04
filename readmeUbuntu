@@ -110,21 +110,27 @@ sudo apt-get install kubuntu-desktop
 sudo apt-get install awesome
 
 
-############# ctags  #############
+############# cscope  #############
 
 If you want to include only source code files with cscope then do this:
     find . –name “*.cpp” –o –name “*.[ch]” > cscope.files
 then type:
     cscope –b –q –R
-You cscope database is now created.
+Your cscope database is now created.
 
 When you invoke cscope type:
     cscope –d   // Prevents the database from getting rebuilt at invocation
 
+Example with Prune:
+  # Say you have 'UnitTest' and 'sim' dirs you wish to exclude, do this:
+  find . \( -path "./UnitTest" -prune , -path "./sim" -prune \) -name "*.cpp" -o -name "*.[ch]" > cscope.files
+
 
 ############# ctags  #############
 
-ctags -R --exclude='.git' .
+ctags -R --exclude=".git" .
+
+ctags -R --exclude="sim" --exclude="UnitTest" .
 
 
 ############# Ubuntu 12.04 Add to Panel #############

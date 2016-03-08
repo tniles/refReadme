@@ -1,0 +1,47 @@
+
+Most relevant info for cygwin is implemented in my aliases file. This is mostly a log for
+interesting errors and workarounds.
+
+Using an X server: startxwin does a good job.
+
+Fork errors (child and parent mismatches):
+    Typically means you need to rebase. This can be caused by either reconfiguring
+    (installing/uninstalling) cygwin packages, or by the windows OS itself (in particular,
+    invasive hooks from DLLs).
+    STORY: I had a working x server (through startxwin) and it stopped working, citing a
+    similar fork error. This was after I had done a handful of install/uninstall operations
+    through the cygwin setup program. Performing a rebaseall got the X server/client running
+    again. However, gvim still had a fork error and would not load, even though kdiff3-qt
+    would. With a reboot, another rebase or two, and another reboot, everything was
+    operational again, including gvim.
+    SEE: https://cygwin.com/faq/faq.html#faq.using.bloda
+
+    The following is a relevant answer from StackOverflow (http://stackoverflow.com/questions/9300722/cygwin-error-bash-fork-retry-resource-temporarily-unavailable):
+
+    ### ### ###
+    (assuming Cygwin is installed at C:\Cygwin):
+
+    Open Task Manager and close any processes that look to be Cygwin related.
+    Open C:\Cygwin\bin in Windows Explorer
+    Verify that dash.exe, ash.exe, rebase.exe, and rebaseall exist in this folder
+        If any of them are missing, re-run Cygwin setup and select the dash, ash, and rebase 
+        packages right-click your C:\Cygwin folder, uncheck Read-only (if its checked), and 
+        press OK.
+        When an error about not being able to switch some files comes up, select "Ignore All".
+        Wait for this process to complete.
+    Browse to C:\Cygwin\bin in Windows Explorer
+    Right click dash.exe and click "Run as Administrator". A command Prompt should appear with nothing 
+    but a $
+    Type /usr/bin/rebaseall -v, hit enter, and wait for the process to complete.
+        If you get errors about Cygwin processes running, try Step 1 again. If that still 
+        doesn't work, Restart your computer into safe mode and try these steps again.
+        A commenter noted that, depending on your settings, you may have to type
+          cd /usr/bin && ./rebaseall -v instead.
+    Try opening Cygwin again.
+
+    This process worked for me. I hope it works for you guys too.
+
+    Source: http://cygwin.wikia.com/wiki/Rebaseall
+    ### ### ###
+
+

@@ -1,9 +1,19 @@
 
 SubVersioN source control management
 
-NOTE: do not install cygwin's svn if you are also running tortoise svn. There are reportedly
+NOTE: do not install cygwin's svn if you intend to use tortoise svn. There are reportedly
 some ways around this without conflict for ver. 1.7 and higher, but it might not be worth the
-headache. Experiment: install cygwin's svn and uninstall tortoise's command line tools.
+headache.
+Experiment: install cygwin's svn and uninstall tortoise's command line tools.
+    Results! Cygwin's svn works just fine if tortoise's cli tools are uninstalled (didn't
+    bother trying with both installed). The key blocking issue was the "SVN_SSH" windows var
+    which cygwin was reading. Exporting this in bash to "ssh -q" made svn+ssh work.
+    NOTE: I found the IDE we were using (IAR) had some sort of svn integration in the project
+    and complained about not being able to find "svn.exe". Re-installing the tortoise command
+    line tools resolved these complaints.
+
+
+# SVN GENERAL DESCRIPTION #
 
 Centralized repo, usually accessible by a server url. 
 "Trunk" holds the "main" or "master" copy of the code. 

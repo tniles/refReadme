@@ -2,8 +2,13 @@
 SSH with X11 forwarding:
     ssh -Y user@server
 
+Log on to a remote machine from an authorized network: 
+    ssh -Y -l tniles foo.baz.bar.com    # url or ip
+
+
 Logs:
     /var/log/secure
+
 
 To Create a SSH key:
     ssh-keygen
@@ -13,6 +18,7 @@ To Create a SSH key:
     The id_rsa.pub is now available in ~/.ssh for sharing.
 
     Ref: https://git-scm.com/book/en/v1/Git-on-the-Server-Generating-Your-SSH-Public-Key 
+
 
 Add a SSH key to a machine with an ssh server (passwordless login):
     ssh-copy-id -i ~/.ssh/id_rsa.pub user@server
@@ -26,6 +32,15 @@ Add a SSH key to a machine with an ssh server (passwordless login):
         this *will* cause issues with multiple user ssh connections. Also, the /home/user/.ssh
         dir should have a context type of user_home_t.
 
+
+Authorized Keys file:
+    Depending on the server setup, you may have to manually add your public key (rather than
+    using the ssh-copy-id).
+
+    Copy your (client's) public key to the server's ~/.ssh directory.
+    cat id_rsa.pub >> authorized_keys    # NOTE the double arrow for append
+
+
 Known hosts file:
     Sometimes you need to remove entries from your known_hosts file:
         ssh-keygen -R hostName
@@ -33,8 +48,6 @@ Known hosts file:
         ssh-keygen -H -F hostName   # finds the line responsible for hostName
     NOTE: this command assumes the typical port 22 for ssh, as it is part of the key entry.
 
-Log on to a remote machine from an authorized network: 
-    ssh -Y -l tniles foo.baz.bar.com    # url or ip
 
 Debugging a ssh connection:
     Very simple, basically just whether or not ip addresses are correct/on the same network,
@@ -46,6 +59,7 @@ Debugging a ssh connection:
         sudo iptables -L -v
     Verify ssh is listening on port 22:
         ss -altn
+
 
 Login banners (will be seen by users logging in, e.g. via ssh):
 

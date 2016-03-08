@@ -1,0 +1,93 @@
+
+SubVersioN source control management
+
+NOTE: do not install cygwin's svn if you are also running tortoise svn. There are reportedly
+some ways around this without conflict for ver. 1.7 and higher, but it might not be worth the
+headache. Experiment: install cygwin's svn and uninstall tortoise's command line tools.
+
+Centralized repo, usually accessible by a server url. 
+"Trunk" holds the "main" or "master" copy of the code. 
+"Branches" are snapshots, a copy of trunk's contents at the time of branch creation.
+"Tags" are snapshots, a *named* copy of trunk's contents at the time of tag creation.
+"Working copy" is a copy of the repo's contents, held locally on your machine.
+    A set of files is "checked out" from a central repo into a local working copy.
+    A set of changed files is "checked in" to a central repo from a local working copy.
+
+
+Repo URLs generally look like this:
+    svn+ssh://user@server/path/to/centralized/repo
+And to get a copy of the repo:
+    svn co svn+ssh://user@server/path/to/centralized/repo
+
+
+# COMMON COMMANDS #
+
+"Help": use 'svn help cmd' to see svn's detailed help on <cmd>.
+    - Use 'svn help' to see a list of commands and their abbreviations.
+
+"Status" shows information about changes, etc. since the last co/update. See 'svn help
+status' for legend and details.
+
+"Checkout/co" get content from the remote repo into a local working copy.
+    - Recursive by default
+    - See "svn help co" for details on specifying multiple repos
+
+"Commit/ci" place content into the remote repo from a local working copy.
+    - Commits are atomic
+    - Changes are first added/staged to the (pending) "change list"
+    - Use the -m switch to include "commit message"; otherwise editor will open
+
+"Update" to pull newer content from the repo into the private working copy (updates the wc
+with other developer's changes which have been committed to the repo since the last update/co
+of the working copy).
+
+"Add"/"Delete": add/delete files or dirs in the working copy. No changes made to the repo
+until commit/checkin/ci. "Rename" and "move" have similar behavior.
+
+"Revert" to undo all changes/wip to the files specified in the working copy.
+
+"Log" to see the commit log. Note: requires a connection to the repo.
+    - 'svn help log' has some good examples
+
+"Info" to see some basic meta data concerning the repo.
+
+"Create" for making a new centralized repo.
+
+
+# RESOLVING CONFLICTS (DIFF AND MERGE) #
+
+"Diff" to view diff between most recent two versions of the file specified.
+
+"Merge" to attempt an automatic merge.
+
+"Resolve" to mark a previously conflicted file as having been resolved. Poor little file.
+    - e.g. svn resolve --accept=working fileName
+
+
+# BRANCHING #
+
+Creating a Branch: from the root level of the working copy, do:
+    $ ls
+        branches tags trunk
+    $ svn copy trunk branches/myFeature
+        A     branches/myFeature
+    $ svn status
+        A  +  branches/myFeature
+    $ svn commit -m "feature branch"
+        Adding branches/myFeature   
+        Adding [...]
+
+
+# MISCELLANEOUS #
+
+In general, 'svn' commands are safe. 'svnadmin' commands can be dangerous without knowledge of
+the svn internals.
+
+Use 'svn ls' and 'svnlook' to inspect repos without performing a checkout.
+
+To remove a local/working copy, simply delete it from the filesystem.
+
+
+
+
+

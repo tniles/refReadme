@@ -45,3 +45,7 @@ Fork errors (child and parent mismatches):
     ### ### ###
 
 
+Error: "cygcrypt-0.dll missing" and other complaints about not being able to source libraries
+related to this dll. Solution: re/install other libraries which depend on libcrypt* (e.g.
+libattr1).
+

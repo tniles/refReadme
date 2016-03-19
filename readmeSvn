@@ -67,6 +67,9 @@ until commit/checkin/ci. "Rename" and "move" have similar behavior.
 # RESOLVING CONFLICTS (DIFF AND MERGE) #
 
 "Diff" to view diff between most recent two versions of the file specified.
+    $ svn diff -rHEAD filename        # changes in repository
+    $ svn diff -rPREV:BASE filename   # most recent change
+    $ svn diff -r 343:344 http://svn.example.com/repos/calc/trunk
 
 "Merge" to attempt an automatic merge.
 
@@ -88,6 +91,33 @@ Creating a Branch: from the root level of the working copy, do:
         Adding [...]
 
 
+# KEEPING BRANCHES UP-TO-DATE WITH TRUNK #
+
+Branch management in svn can be painful if the branch is not kept up to date with the trunk as
+trunk progresses. The basic procedure is described here:
+
+- Make sure all working copy work is checked in (both branch and trunk)
+- cd featureBranch
+- Check "svn status". It should be the same now and when done with this process.
+- "svn update" the trunk
+- "svn update" the branch
+- "svn merge /path/to/trunk"
+- Resolve any conflicts
+- "svn ci"
+- Check "svn status". It should be the same now as it was prior to this process.
+
+
+# MERGING FEATURE BRANCH TO TRUNK #
+
+If the branch has tracked trunk well, then you should only need to 1) update the branch one
+last time with trunk, and then 2) merge the branch back into trunk. Status should be
+clean/consistent before and after.
+
+- cd trunk
+- "svn merge --reintegrate /path/to/featureBranch"
+- "svn ci"
+
+
 # MISCELLANEOUS #
 
 In general, 'svn' commands are safe. 'svnadmin' commands can be dangerous without knowledge of
@@ -98,6 +128,30 @@ Use 'svn ls' and 'svnlook' to inspect repos without performing a checkout.
 To remove a local/working copy, simply delete it from the filesystem.
 
 
+# IGNORING FILES #
 
+Use "svn status --no-ignore" to view effective changes.
 
+Using file .svnignore:
+    Populate the file with patterns, one line at a time. Save.
+    svn propset svn:ignore -F .svnignore .    # Could use -R, but be careful! Probably more
+                                              # changes than you want.
+    Add .svnignore and ci
+
+Command line:
+    Ignoring files (from current dir):
+        svn propset svn:ignore "bin" .
+        -or-
+        svn propset svn:ignore "file1
+        file2
+        file3" dirName
+
+    Undo ignore (invokes editor):
+        svn propedit svn:ignore .
+
+NOTES:
+- If you use the -R switch and find you've touched too many files, use the -R switch again 
+  with the "revert" command to undo the damage.
+- SVN will not ignore anything already under version control. So, "svn delete first", then try
+  to ignore it.
 

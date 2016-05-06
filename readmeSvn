@@ -18,6 +18,7 @@ Experiment: install cygwin's svn and uninstall tortoise's command line tools.
 Centralized repo, usually accessible by a server url. 
 "Trunk" holds the "main" or "master" copy of the code. 
 "Branches" are snapshots, a copy of trunk's contents at the time of branch creation.
+    Branches can be updated with merges from trunk.
 "Tags" are snapshots, a *named* copy of trunk's contents at the time of tag creation.
 "Working copy" is a copy of the repo's contents, held locally on your machine.
     A set of files is "checked out" from a central repo into a local working copy.
@@ -35,8 +36,19 @@ And to get a copy of the repo:
 "Help": use 'svn help cmd' to see svn's detailed help on <cmd>.
     - Use 'svn help' to see a list of commands and their abbreviations.
 
+"Log" to see the commit log. Note: requires a connection to the repo.
+    - 'svn help log' has some good examples
+    - Use '-v' to list files changed by a given commit
+
 "Status" shows information about changes, etc. since the last co/update. See 'svn help
 status' for legend and details.
+    'svn status -u' will show items which will be updated if 'svn update' is executed.
+    'svn status --show-updates is the same thing.
+        Do the revision numbers seem too far apart? Remember, it may be that you are working
+        in a co'd subset of the repo. So, although you're not aware of changes in the trunk
+        you're working in, a trunk elsewhere in the file hierarchy likely is responsible for
+        these changes. One way to track these down:
+            svn diff -r(M-1):M ^/         # the key here being the repo URL, ^/
 
 "Checkout/co" get content from the remote repo into a local working copy.
     - Recursive by default
@@ -56,15 +68,18 @@ until commit/checkin/ci. "Rename" and "move" have similar behavior.
 
 "Revert" to undo all changes/wip to the files specified in the working copy.
 
-"Log" to see the commit log. Note: requires a connection to the repo.
-    - 'svn help log' has some good examples
+"Cleanup" if anything is ever funky (e.g. deleted a file via 'rm' instead of 'svn rm', or if
+working copy is out of sync with reality). Followed by an "update" and everything should be
+back to normal.
 
 "Info" to see some basic meta data concerning the repo.
 
 "Create" for making a new centralized repo.
+    - 'svnadmin create newRepoName'
+    - XXX - more to come...
 
 
-# RESOLVING CONFLICTS (DIFF AND MERGE) #
+# DIFF AND MERGE (RESOLVING CONFLICTS) #
 
 "Diff" to view diff between most recent two versions of the file specified.
     $ svn diff -r HEAD filename        # changes in repository
@@ -79,6 +94,16 @@ until commit/checkin/ci. "Rename" and "move" have similar behavior.
         COMMITTED = last commit at or before BASE
 
 "Merge" to attempt an automatic merge.
+
+Configure and use external merge tools. 
+    SVN's internal merge tool is notoriously difficult to use and hence error prone. 
+    Edit ~/.subversion/config by specifying the merge-tool-cmd, e.g.
+        merge-tool-cmd = kdiff3Helper
+    Create a script kdiff3Helper script and place it in your ~/bin with appropriate perms.
+        #!/bin/bash
+        kdiff3 "$1" "$2" "$3" -o "$4"
+    Now when you run 'svn merge' choose option "l" (that's "L") to launch an external tool.
+    When finished resolving any conflicts, choose option "r" to mark the file as resolved.
 
 "Resolve" to mark a previously conflicted file as having been resolved. Poor little file.
     - e.g. svn resolve --accept=working fileName
@@ -97,6 +122,9 @@ Creating a Branch: from the root level of the working copy, do:
         Adding branches/myFeature   
         Adding [...]
 
+    NOTE: this operation should work even with modified files in trunk (i.e. they will carry
+    over to the new branch).
+
 
 # KEEPING BRANCHES UP-TO-DATE WITH TRUNK #
 
@@ -110,7 +138,7 @@ trunk progresses. The basic procedure is described here:
 - Check "svn status". It should be the same now and when done with this process.
 - "svn update" the trunk
 - "svn update" the branch
-- "svn merge /path/to/trunk"
+- "svn merge /path/to/trunk"        ... alternatively, with svn shortcut: "svn merge ^/trunk"
 - Resolve any conflicts
 - "svn ci"
 - Check "svn status". It should be the same now as it was prior to this process.
@@ -122,14 +150,43 @@ If the branch has tracked trunk well, then you should only need to 1) update the
 last time with trunk, and then 2) merge the branch back into trunk. Status should be
 clean/consistent before and after.
 
+Whole branch:
+
 - cd trunk
-- "svn merge --reintegrate /path/to/featureBranch"
+- "svn merge /path/to/featureBranch"          # --reintegrate switch deprecated after 1.7ish
 - "svn ci"
+
+Single file:
+
+    /** TL;DR **/
+    This is generally a bad idea. See below for details.
+    So, although you lose the full history from branch commits (may be negligible anyways),
+    the easiest thing to do is to make sure you have trunk's latest changes and your latest
+    changes incorporated into the file(s) and then do a system command 'cp' and overwrite the
+    file. Commit it and you're all done. Icky, but that seems to be the quick and dirty way.
+    Cherry-picking may be an option, but then you may have some of the issues described below.
+    /** TL;DR **/
+
+    See http://stackoverflow.com/questions/12730180/is-it-safe-to-merge-individual-files-between-branches-in-svn?lq=1
+    for details. The issue revolves around what SVN is apt to do with the svn:mergeinfo
+    property of the files and directories in the repo. Later, when reintegrating a branch, you
+    may see many more files as having been changed than just the few single files you
+    initially merged. 
+    This is one reason why whole branch merges are generally preferred.
 
 
 # BRANCH OF A BRANCH (OR TAG) #
 
 svn copy /proj/path/to/tagXyz /proj/path/to/myBranchFromTagXyz
+
+
+# COMPARING BRANCHES #
+
+To ls files with differences, pass the "--summarize" switch.
+
+svn diff ^/svnpath/to/trunk ^/svnpath/to/branch
+  -or-
+svn diff ^/svnpath/to/branch1 ^/svnpath/to/branch2
 
 
 # MISCELLANEOUS #
@@ -138,8 +195,14 @@ In general, 'svn' commands are safe. 'svnadmin' commands can be dangerous withou
 the svn internals.
 
 Use 'svn ls' and 'svnlook' to inspect repos without performing a checkout.
+    Note: the caret ^ is a shorthand for the beginning of the repo's relative server path.
+    That is, 'svninfo' will show you exactly where this points. Can be useful when combined
+    with 'svn ls' within an already checked out repo.
 
 To remove a local/working copy, simply delete it from the filesystem.
+
+Set executable bit on a file:
+    svn propset svn:executable ON script.sh
 
 
 # IGNORING FILES #
@@ -166,6 +229,6 @@ Command line:
 NOTES:
 - If you use the -R switch and find you've touched too many files, use the -R switch again 
   with the "revert" command to undo the damage.
-- SVN will not ignore anything already under version control. So, "svn delete first", then try
+- SVN will not ignore anything already under version control. So, "svn delete" first, then try
   to ignore it.
 

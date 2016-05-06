@@ -8,6 +8,12 @@ Fork errors (child and parent mismatches):
     Typically means you need to rebase. This can be caused by either reconfiguring
     (installing/uninstalling) cygwin packages, or by the windows OS itself (in particular,
     invasive hooks from DLLs).
+
+    NOTE: it may be necessary to perform these steps immediately after a clean re/boot.
+        Open C:\Cygwin\bin in Windows Explorer
+        Run as Administrator dash.exe
+        Type /usr/bin/rebaseall -v, hit enter, and wait for the process to complete.
+
     STORY: I had a working x server (through startxwin) and it stopped working, citing a
     similar fork error. This was after I had done a handful of install/uninstall operations
     through the cygwin setup program. Performing a rebaseall got the X server/client running
@@ -15,6 +21,12 @@ Fork errors (child and parent mismatches):
     would. With a reboot, another rebase or two, and another reboot, everything was
     operational again, including gvim.
     SEE: https://cygwin.com/faq/faq.html#faq.using.bloda
+
+    STORY2: After rebooting one day cygwin could not start, period. These forking errors were
+    to blame, several of them (slowly) filling the screen and would not allow cygwin to start.
+    A successful rebase righted the behavior, although it returned after a reboot. To finally
+    solve this, it took a reboot, a rebase, a reinstall of a single package (I chose gnuplot),
+    and another reboot and everything was working fine again.
 
     The following is a relevant answer from StackOverflow (http://stackoverflow.com/questions/9300722/cygwin-error-bash-fork-retry-resource-temporarily-unavailable):
 
@@ -48,4 +60,16 @@ Fork errors (child and parent mismatches):
 Error: "cygcrypt-0.dll missing" and other complaints about not being able to source libraries
 related to this dll. Solution: re/install other libraries which depend on libcrypt* (e.g.
 libattr1).
+
+
+IAR in cygwin:
+
+Build:
+"/cygdrive/c/Program Files (x86)/IAR Systems/Embedded Workbench ARM 7.40.3/common/bin/IarBuild.exe" myProject.ewp -build "Release"
+
+Output conversion:
+"/cygdrive/c/Program Files (x86)/IAR Systems/Embedded Workbench ARM 7.40.3/arm/bin/ielftool.exe" --srec --srec-s3only myApp.out myApp.srec
+
+"/cygdrive/c/Program Files (x86)/IAR Systems/Embedded Workbench ARM 7.40.3/arm/bin/ielftool.exe" --bin myApp.out myApp.bin
+
 

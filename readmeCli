@@ -1,5 +1,15 @@
 shell stuff
 
+Making a file of arbitrary size
+--------------------------------------------------
+
+Using 'dd' is a popular option if the file is new.
+    dd if=/dev/zero of=output.dat  bs=24M  count=1
+
+If the file exists and you want to extend or shrink it, use 'truncate'.
+    truncate -s 10K myFile
+
+
 Using ctrl^
 --------------------------------------------------
 
@@ -39,9 +49,8 @@ To add different stop characters for ctrl-w:
     Alternatively, press ESC then backspace to mimic
 
 
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 AWK & SED
-$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+--------------------------------------------------
 
 For sed, note that the substitute command can use a variety of delimiters, as long as you're 
 consistent. For example, try using s^^^g instead of s///g.

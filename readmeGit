@@ -601,13 +601,6 @@ ssh-add -l
 
 
 ################################################################################
-CYGWIN STUFF
-
-Find a program by package:
-    cygcheck -p strings.exe
-
-
-################################################################################
 CSCOPE quick start
 
 If you want to include only source code files with cscope then do this:

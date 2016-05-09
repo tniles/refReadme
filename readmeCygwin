@@ -2,6 +2,12 @@
 Most relevant info for cygwin is implemented in my aliases file. This is mostly a log for
 interesting errors and workarounds.
 
+################################################################################
+
+
+Find a program by package:
+    cygcheck -p strings.exe
+
 Using an X server: startxwin does a good job.
 
 Fork errors (child and parent mismatches):

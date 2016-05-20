@@ -62,6 +62,7 @@ status' for legend and details.
 "Update" to pull newer content from the repo into the private working copy (updates the wc
 with other developer's changes which have been committed to the repo since the last update/co
 of the working copy).
+    - NOTE: to rollback to a previous revision of the repo, pass the -r switch to update.
 
 "Add"/"Delete": add/delete files or dirs in the working copy. No changes made to the repo
 until commit/checkin/ci. "Rename" and "move" have similar behavior.

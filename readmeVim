@@ -9,6 +9,8 @@ Using current pattern:
 Within line numbers m to n inclusive:
     :m,ns/pattern//gn
 
+    Note: recognizes ^ and $ characters for beginning and end of file
+
 
 ####################################
 To try: Snippet Managers

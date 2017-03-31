@@ -22,7 +22,6 @@ $$$$$$$$$$$$$$$$$$$ refresh user perms,etc w/o logout $$$$$$$$$$$$$$$$
 exec su -l $USER
 
 
-
 $$$$$$$$$$$$$$$$$$$ mouse focus $$$$$$$$$$$$$$$$
 
 For ubuntu 12.04, choose 'mouse' or 'sloppy':
@@ -82,6 +81,11 @@ Example use case:
     distinction when attempting to install SystemImager, the forked Remastersys project, which
     has all three options.
     Itaniums were targeted at servers, and so it is unlikely you will come across them on PCs.
+
+
+############# search packages #############
+
+apt-cache search regex [regex ...]      # regex patterns are ANDed (see man apt-cache)
 
 
 ############# alternate package sources #############

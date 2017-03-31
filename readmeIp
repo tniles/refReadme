@@ -550,6 +550,45 @@ Not to be confused with CIFS (Common Internet File System), which CUPS leverages
 
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+Network Analyzers:
+
+GUI tool: wireshark
+
+tcpdump, nstreams   # CLI tools, nstreams analyzes the output of tcpdump
+    sudo tcpdump -i wlan0 host localhost
+    Note: didn't get too far with this in 5-10 minutes of trying, and it jacked up my wlan0
+    interface. :-/ Thankfully a disable/enable of the interface restored everything.
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+IP Scanning:
+
+Use nmap or arp-scan. Nmap is a very capable tool, and arp-scan seems to be well-known, too,
+but it is not obvious why it is popular or what is different.
+
+Try: arp-scan --interface=eth0 --localnet
+
+To find IPs/hosts on the network:
+    nmap -A -sL -T4 ipAddr > fileOut
+
+    For finding connected devices on your network, 'ipAddr' is a range (e.g.
+    200.121.40-60.10-20). Use -sL to just list possible targets rather than pinging or
+    knocking on ports. The -A enables OS and version detection (a rough guess). If using a
+    large address range, outputting to a file is recommended.
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+Port Scanning:
+
+    Scanners: doscan, python-nmap, knocker, unhide, php-net-portscan
+    Detectors: scanlogd, portsentry 
+
+Knocker is simple (CLI) and fast (typically >1000 ports in less than 30s). Usage is
+straightforward provided you know the host IP of interest:
+    knocker --host 192.168.x.y
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 VPN:
 
     Always ask first: what protocol does the VPN server use? 

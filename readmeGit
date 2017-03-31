@@ -80,6 +80,10 @@ Git command on multiple repos:
     #alias gfe='git submodule foreach --recursive'
     # Instead of `ls` and bash [[ -d ]], could use `find . -maxdepth 1 -type d -print`
 
+##################
+### SUBMODULES ###
+##################
+
 Clone with submodules
     git clone --recursive <link>
 

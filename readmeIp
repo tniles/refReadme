@@ -4,6 +4,7 @@ NOTE: windoze commands at end of document.
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 
+
 Find your external IP:
     # NOTE: this method requires "going out" of network
     lynx -dump -hiddenlinks=ignore -nolist -verbose http://checkip.dyndns.org
@@ -18,6 +19,8 @@ Flush DNS cache:
     syslog (/var/log/syslog) to see messages re: dnsmasq. If caching is enabled, use
         sudo pkill -HUP dnsmasq
     to clear its cache.
+
+Using Netstat:
 
 Edit your ip addresses (Debian):
     NOTE: did not really get this to work in Ubuntu via the command line. :-(

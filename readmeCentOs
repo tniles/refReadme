@@ -385,7 +385,7 @@ Partitioning:
 
     Final comments on partitioning:
         Subdirs are fair game for having their own partition. Basically, anything you don't 
-        want to lose (which is not OS related) is you do a fresh install. A good example would
+        want to lose (which is not OS related) if you do a fresh install. A good example would
         be a mySql db, and you could make /var/lib/mysql its own partition.
 
 Inodes:

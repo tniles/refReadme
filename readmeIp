@@ -119,12 +119,8 @@ Ip addresses:
     The subnet mask is expressed as a number of bits, starting from left to right in the ipv4
     8-bit value fields.
 
-nmap:
-
-    Network Mapper. Sounds like a good tool to look into further sometime.
 
 Cygwin Ping:
-
     Works only with admin priveleges. Easy way out: uninstall cygwin ping
     so that windows ping is used instead (as of 2009 or so).
 
@@ -570,8 +566,10 @@ To find IPs/hosts on the network:
 
     For finding connected devices on your network, 'ipAddr' is a range (e.g.
     200.121.40-60.10-20). Use -sL to just list possible targets rather than pinging or
-    knocking on ports. The -A enables OS and version detection (a rough guess). If using a
-    large address range, outputting to a file is recommended.
+    knocking on ports (remove to see currently active hosts)--this option reports recently
+    connected devices and is a (somewhat?) passive approach. The -A enables OS and version
+    detection (a rough guess). If using a large address range, outputting to a file is 
+    recommended.
 
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$

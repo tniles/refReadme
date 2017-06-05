@@ -1,6 +1,8 @@
 
+
 Most relevant info for cygwin is implemented in my aliases file. This is mostly a log for
 interesting errors and workarounds.
+
 
 ################################################################################
 
@@ -79,3 +81,4 @@ Output conversion:
 "/cygdrive/c/Program Files (x86)/IAR Systems/Embedded Workbench ARM 7.40.3/arm/bin/ielftool.exe" --bin myApp.out myApp.bin
 
 
+################################################################################

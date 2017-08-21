@@ -378,6 +378,43 @@ Linux-readable mesh files (to name a few, such as those you can get from solidwo
 FreeCAD works very well for viewing STEP files, e.g. can toggle visibility of components.
 
 
+********** Incremental Backups (rsync) **********
+
+Invocation: rsync options source destination
+
+Sync two directories on a local pc:
+    rsync -azv myFiles/ myBackupDir
+        where -z enables compression, -v is verbose, and -a is archive mode which enables
+        recursive (-r), preserves symlinks, permissions, timestamp, and owner/group info.
+
+    For only one file: rsync -zv myFiles/fileName myBackupDir/fileName
+
+Sync to a remote host (syntax like a scp command):
+    rsync -avz myFiles/ tyler@192.168.200.10:/home/otherBackupDir
+
+In the event you have a common file shared between multiple sources being synced to the
+destination, the -u option specifies to skip updating files which are newer/modified on the
+destination.
+
+The --progress option will provide verbose progress output which may be useful for larger
+operations.
+    rsync -azv --progress myFiles/ myBackupDir
+    or more useful:
+    rsync -azv --progress myFiles/ myBackupDir | tee syncLog
+
+The --delete option is useful for pruning the destination archives, should the source have
+changed. This will delete files on the destination which no longer exist on the source. On
+the destination, this will prevent proliferation of files which have been moved or removed
+on the source.
+    rsync -azv --delete --progress myFiles/ myBackupDir | tee syncLog
+
+There are a ton of options for rsync, including pattern matching and limiting which files get
+transferred based on a maximum size, plus many more.
+
+The command I use to create mirrored backups, rotating through directories with a script:
+    rsync -azv --delete --progress myFiles/ myBackupDir | tee syncLog
+
+
 ********** Incremental Backups (bak, deja-dup, duplicity) **********
 
 Incremental backups are provided through the ubuntu Deja-dup GUI, which is a front end for

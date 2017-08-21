@@ -447,6 +447,17 @@ $^ The names of all the dependencies separated by spaces, but with duplicate
 $+ The names of all the dependencies separated by spaces with duplicate names
    included and in the same order as in the rule. 
 
+String Substitution:
+    $(var:pattern=replacement)
+
+Invoke Makefiles from any directory:
+    mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+    current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
+
+Modifiers to commands within recipes (prior to passing to shell):
+    -command ..... ignore errors from command
+    @command ..... suppress echo of command (to stdout)
+
 
 ********* Bash script magic: *********
 

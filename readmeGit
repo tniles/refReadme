@@ -94,8 +94,17 @@ Add a submodule (must be at .git level of parent)
     git submodule add <link> <path>
         e.g. git submodule add git@mygithost:billboard lib/billboard
 
+Roll a submodule to a newer version
+    From the parent repo, create a branch (e.g. "integrate/updatedSubRepos"), git-add the subrepos with changes and 
+    then do a git-commit. You can then push this branch to the remote and open a Pull Request.
+
 Make submodule point to a particular branch
     Switch to that branch, then commit it, then cd up and update the submodules.
+
+Update all submodules to their bleeding edge and land on master in each submodule:
+    cd parentRepo && git checkout master && git pull        # from an up-to-date parent repo
+    git submodule update --init --recursive --remote        # update to latest commit on default (master) branch
+    git submodule foreach --recursive git checkout master   # change from a detached HEAD to master
 
 Remove a submodule
     git submodule deinit <name>
@@ -103,11 +112,9 @@ Remove a submodule
        -or-
     git submodule rm <path>
 
-Identify submodules in a project:
-    git ls-tree -r --name-only <branch>
+Identify submodules (and their commit hash) in a project:
+    git submodule status
     git submodule foreach --recursive git rev-parse HEAD
-
-Identify the commit of submodules in a project:
     git ls-tree -r <branch>
 
 Remove obsolete branches (Update list of remote branches)
@@ -511,7 +518,7 @@ environment.
     checkout a new branch
     git checkout -b mybranch
 
-    add a .gitattributes file.  This file tells git to normalize line endings upon commit and
+    Add a .gitattributes file.  This file tells git to normalize line endings upon commit and
     to convert to the system's native line endings upon checkout.  This file also tells git 
     which files are considered to be text files.  Here is an example file.
     # normalize line endings
@@ -527,26 +534,37 @@ environment.
     *.h text
     *.hpp text
 
-    commit the .gitattributes file
+    Commit the .gitattributes file
     git add .gitattributes
-    git commit -m "added .gitattributes file"
+    git commit -m "added .gitattributes file to normalize line endings"
 
-    remove every file from git's index.
+    Remove every file from git's index.
     git rm --cached -r .
 
-    rewrite the git index to pick up all the new line endings
+    Rewrite the git index to pick up all the new line endings
     git reset --hard
 
-    Add all your changed files back and prepare them for a commit. This is your chance to 
-    inspect which files, if any, were changed.
+    Restore your work in progress: Add all your changed files back and prepare them for a commit.
+    This is your chance to inspect which files, if any, were changed.
     git add .
     # it is perfectly safe to see a lot of messages here that read
     # "warning: CRLF will be replaced by LF in file."
 
     commit the changes to the repository.
-    git commit -m "Normalize all the line endings"
+    git commit -m "my work I was doing"
+
     Test the new commit on both linux and windows.
     Submit a pull request
+
+## NOTES ##
+    In April 2017 I had more than a bit of trouble with this procedure with some new repos 
+    under git 2.12. One of the things I found was that perhaps the reset command should omit 
+    the "--hard" switch. Also, the "restore your wip" may be an integral step to let git 
+    actually have something worthwhile to write about (a sort of trick, accessory to the line
+    ending normalization business).
+
+    The github tutorial uses a "rm .git/index" instead of the above "git rm --cached" 
+    approach. I am now wondering what the exact difference is between the two.
 
 
 ################################################################################

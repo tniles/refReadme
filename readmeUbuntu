@@ -408,11 +408,25 @@ the destination, this will prevent proliferation of files which have been moved 
 on the source.
     rsync -azv --delete --progress myFiles/ myBackupDir | tee syncLog
 
+The -x option tells rsync to not cross file system boundaries (think: partitions). This can
+help to specify or guard which data is backed up.
+
 There are a ton of options for rsync, including pattern matching and limiting which files get
 transferred based on a maximum size, plus many more.
 
+Don't forget to exclude bad things, such as ~/.gvfs and caches. Here's a sample list to
+exclude as taken from Back In Time (BIT):
+    .gvfs
+    .cache*
+    [Cc]ache*
+    .thumbnails*
+    [Tt]rash*
+    *.backup*
+    *~
+    ${HOME}/Ubuntu\ One
+
 The command I use to create mirrored backups, rotating through directories with a script:
-    rsync -azv --delete --progress myFiles/ myBackupDir | tee syncLog
+    rsync -azxv --exclude=filesToIgnore --delete --progress myFiles/ myBackupDir | tee syncLog
 
 
 ********** Incremental Backups (bak, deja-dup, duplicity) **********

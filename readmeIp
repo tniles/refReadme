@@ -233,7 +233,7 @@ Find ip addresses of nameservers/DNS:
     nslookup google.com ns3.google.com
 
 Ping:
-    ping -c 10 nas
+    ping -c 10 ipAddr
     Send packets and listen for echos to see if a machine (or network connection) is on the
     network. E.g., I have the ip addr for a machine... can I connect to it?
 

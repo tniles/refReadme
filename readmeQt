@@ -1,3 +1,100 @@
+
+2022-10-18
+
+# Qt Licensing:
+
+Using the open source licensing model (GPL/LGPL).
+
+# Installing qt6 on Ubuntu:
+
+apt-cache show qt6-base-dev will display that this is the 6.2.4 version of Qt. At time of
+writing, this is 'Version: 6.2.4+dfsg-2ubuntu1'. 
+
+    sudo apt-get install qtcreator qmake6 qt6-base-dev qt6-base-dev-tools qt6-base-private-dev qt6-documentation-tools qt6-qmltooling-plugins qt6-tools-dev qt6-tools-dev-tools qml-qt6 qmlscene-qt6 build-essential libgl1-mesa-dev libqt6serialbus6 libqt6serialbus6-dev libqt6serialport6 libqt6serialbus6-bin libqt6serialbus6-plugins libqt6serialport6-dev
+
+The above installs are required for qtCreator to see a valid qt6 install (Tools > Kits).
+Include the serialport and serialbus libs for QTSerialIO usage.
+
+The qt.conf file is located at /usr/lib/x86_64-linux-gnu/qt6
+
+To make the qtcreator desktop kit happy, need to sepcify the mkspec which lives at:
+    /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++
+
+# Troubles with Ubuntu's qtchooser and qt6
+
+In order for the Ubuntu CLI to work with qmake, I had to get qtchooser on ubuntu to work 
+properly. Verify the directory /etc/xdg/qtchooser exists, and if not then create it as root. 
+Ensure within that directory a file owned by root exists as default.conf which qtchooser will
+automatically look to (see `man qtchooser`). Within this file, I added the two lines:
+
+    /usr/lib/qt6/bin
+    /usr/lib/x86_64-linux-gnu
+
+Now running qmake -v returns the qt6 info expected. And to fully flesh out qtchooser's
+options, that same directory now looks like this:
+    
+    /etc/xdg/qtchooser
+        6.conf  default.conf@  qt6.conf  qt6-x86_64-linux-gnu.conf
+
+    where default.conf -> qt6-x86_64-linux-gnu.conf is a symlink. 
+
+# More Troubles
+
+Small discovery -- there is at least one diff between 'qmake -query' key-value pairs and the
+/usr/lib/x86_64-linux-gnu/qt6/qt6.conf file. 
+
+Additional small discovery -- two key/val pairs point to a non-existent directory:
+    QT_INSTALL_EXAMPLES:/usr/lib/x86_64-linux-gnu/qt6/examples
+    QT_INSTALL_DEMOS:/usr/lib/x86_64-linux-gnu/qt6/examples
+
+After much searching online, I am forced to conclude that ubutnu 22.04 does not package the
+qt6 examples. So I am now downloading the source in git (clone git://code.qt.io/qt/qtbase.git)
+and will checkout the 6.2.4 ref to snag the examples from the tree and drop them into a
+reasonable location. 
+
+***Ultimately, it is still a question of why does qtCreator not autoregister qt6 
+as installed from the Ubuntu repos? 
+
+10/21: at this point, I've spent too much time on this. I will try an install of qt5 through
+the Ubuntu repos. If that doesn't work, then I'll go with the online installer for qt6. 
+
+qt5 install: 
+    apt-get install qtbase5-dev qtbase5-dev-tools qtbase5-doc qtbase5-doc-dev qtbase5-doc-html qtbase5-examples qt5-assistant qt5-doc qt5-doc-html qt5-qmake qt5-qmake-bin qt5-qmltooling-plugins qt5-quick-demos
+
+No success in getting qtCreator to autoregister qt5.
+
+Then I found this article/link: https://forum.qt.io/topic/83686/condition-to-auto-detect-installed-qt-versions-in-qt-creator/2
+which describes how the qtcreator 'sdktool' is responsible for "autoregistration". Nothing
+much automatic about it, sadly. Points to these other online resources, too: 
+    https://github.com/qt-creator/qt-creator/blob/master/src/tools/sdktool/README.md
+    https://youtu.be/DP0lMoLVneY
+
+The command ll `dpkg -L qtcreator | grepi sdk` confirms the sdktool is installed as part of
+qtcreator (yields: '/usr/libexec/qtcreator/sdktool*').
+
+Tried: 
+    sdktool addQt --id "try.autodetect.qt6" --name "Qt6-Ubuntu" --qmake /usr/bin/qmake --type Qt6ProjectManager.QtVersion.Desktop
+    This did NOT autoregister a qt version in qt creator.
+
+# Youtube 
+
+Youtube videos to watch if all else fails :-)
+    https://youtu.be/nscgFv4l53w
+    https://youtu.be/LuzMteL7kpY
+
+# Conclusion
+
+So what I eventually did was just create my own copy of the examples directory, set up my own
+kit manually in qtCreator (using what I described above), and installed all the necessary
+packages. This allowed me to import the examples.pro from the qtbase clone into qtcreator and
+build it successfully (no errors, two warnings in their source code). So not as nice as having
+everything pretty and packaged out-of-the-box in qtcreator, but reaching the same goal: I now
+have access to the examples in the IDE and can run any one of them. 
+
+
+
+################################################################################
+
 To use qtCreator to debug like VS
 
 > Build the app as above, with qmake and make.
@@ -37,12 +134,6 @@ Launch app from the terminal. If you need to debug startup code, add a popup win
 as possible in the program. This will give you time to attach the debugger and set breakpoints
 before you hit OK to continue.
 
-// sudo /opt/Qt5.3.1/Tools/QtCreator/bin/qtcreator &
-// WARNING: DO NOT run builds or edit files from QtCreator when running it with sudo.
-// This will hijack your file permissions and set them to root, which can cause headaches next
-// time you try to build from the terminal. It is best to not even open the foo project when
-// running QtCreator with sudo. Remember: you are here to use the debugger, nothing else.
-//
 // From QtCreator, click Debug >> Start Debugging >> Attach to running application
 // Select app in the list and click "Attach to Process"
 // Now you can set your breakpoints.  click File >> open file or project, and navigate to the 

@@ -11,10 +11,15 @@ Logs:
 
 
 To Create a SSH key:
-    ssh-keygen
-    ssh-keygen -t rsa -b 4096 -C "your@email.com"
+Update from github--time to use ed25519!
+    # ssh-keygen
+    ssh-keygen -t ed25519 -C "your_email@example.com"
+    # Still good for 'legacy' systems which don't support ed255519:
+    # ssh-keygen -t rsa -b 4096 -C "your@email.com"
+
     Accept all defaults by simply pressing Enter at each prompt.
     Don't enter a password unless you want to enter a password ad nauseam (bleh).
+
     The id_rsa.pub is now available in ~/.ssh for sharing.
 
     Ref: https://git-scm.com/book/en/v1/Git-on-the-Server-Generating-Your-SSH-Public-Key 
@@ -24,8 +29,10 @@ Add a SSH key to a machine with an ssh server (passwordless login):
     ssh-copy-id -i ~/.ssh/id_rsa.pub user@server
 
     UBUNTU BUG! Requires more *after* ssh-copy-id: 
-        eval "$(ssh-agent -s)"
+        eval "$(ssh-agent -s)"      # ensure agent is running
         ssh-add                     # add private key to ssh system store
+        #ssh-add ~/.ssh/id_rsa      # legacy
+        ssh-add ~/.ssh/id_ed25519   # ed25519 version
 
     SELinux consideration:
         Verify the security context type is user_home_dir_t (at the /home level) otherwise

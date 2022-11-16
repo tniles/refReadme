@@ -83,9 +83,13 @@ Example use case:
     Itaniums were targeted at servers, and so it is unlikely you will come across them on PCs.
 
 
-############# search packages #############
+############# Package Tools #############
 
 apt-cache search regex [regex ...]      # regex patterns are ANDed (see man apt-cache)
+
+apt-cache show <pkg>                    # show details of a given package
+
+dpkg -L <pkg>                           # list installed files for a given package
 
 
 ############# alternate package sources #############

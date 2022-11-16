@@ -13,7 +13,7 @@ Logs:
 To Create a SSH key:
 Update from github--time to use ed25519!
     # ssh-keygen
-    ssh-keygen -t ed25519 -C "your_email@example.com"
+    ssh-keygen -t ed25519 -C "your@email.com"
     # Still good for 'legacy' systems which don't support ed255519:
     # ssh-keygen -t rsa -b 4096 -C "your@email.com"
 
